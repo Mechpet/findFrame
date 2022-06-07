@@ -16,7 +16,7 @@ similarityThreshold = 0.95
 frameCnt = 0
 matched = 0
 maxFrames = -1
-desiredDim = (400, 225)
+desiredDim = (48, 27)
 sourcePercentStart = 0.0
 targetPercentStart = 0.0
 
@@ -59,7 +59,8 @@ while sourceCapture.isOpened():
         cv2.imshow("Target capture", targetFrameImgResized)
 
         # Calculate the Structural Similarity Index between the two grayscale images
-        ssimFloat = ssim(sourceFrameImg, targetFrameImg)
+        ssimFloat = ssim(sourceFrameImgResized, targetFrameImgResized)
+        print(f"SSIM: {ssimFloat}")
 
         if ssimFloat >= similarityThreshold:
             sourceTime = sourceFrameIndex / sourceFPS
@@ -84,19 +85,13 @@ while sourceCapture.isOpened():
             matched = 0
         
         sourceFrameIndex = sourceCapture.get(cv2.CAP_PROP_POS_FRAMES)
+        print("Index = ", sourceFrameIndex)
     # Something failed while trying to read the next frame; end
     else:
         break
 
-    key = cv2.waitKey(10)
-    # Holding the 'Esc' key will end the loop
-    if key == escape:
+    if cv2.waitKey(10) == escape:
         break
-    # Pressing the 'Space' key will advance to the next frame, if any
-    elif key == space:
-        pass
-    else:
-        cv2.waitKey(5000)
 
     if frameCnt == maxFrames:
         break
