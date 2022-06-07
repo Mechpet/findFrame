@@ -2,7 +2,9 @@ import cv2
 import ffmpeg
 from skimage.metrics import structural_similarity as ssim
 import numpy as np
+from timeit import default_timer as timer
 
+start = timer()
 # Open video captures:
 sourceCapture = cv2.VideoCapture("DS_ENTERTAINMENT.mp4")
 targetCapture = cv2.VideoCapture("Opening.mp4")
@@ -15,8 +17,8 @@ space = 32
 similarityThreshold = 0.95
 frameCnt = 0
 matched = 0
-maxFrames = -1
-desiredDim = (48, 27)
+maxFrames = 1000
+desiredDim = (16, 9)
 sourcePercentStart = 0.0
 targetPercentStart = 0.0
 
@@ -43,8 +45,8 @@ targetCapture.set(cv2.CAP_PROP_POS_FRAMES, targetStart)
 
 # Read the 1st frame of the targetCapture (grayscale)
 targetFlag, targetFrameImg = targetCapture.read()
-targetFrameImg = cv2.cvtColor(targetFrameImg, cv2.COLOR_BGR2GRAY)
 targetFrameImgResized = cv2.resize(targetFrameImg, desiredDim)
+targetFrameImgResized = cv2.cvtColor(targetFrameImgResized, cv2.COLOR_BGR2GRAY)
 
 # Start the main loop of iterating through frames of the source footage
 while sourceCapture.isOpened():
@@ -52,8 +54,8 @@ while sourceCapture.isOpened():
     sourceFlag, sourceFrameImg = sourceCapture.read()
     
     if sourceFlag:
-        sourceFrameImg = cv2.cvtColor(sourceFrameImg, cv2.COLOR_BGR2GRAY)
         sourceFrameImgResized = cv2.resize(sourceFrameImg, desiredDim)
+        sourceFrameImgResized = cv2.cvtColor(sourceFrameImgResized, cv2.COLOR_BGR2GRAY)
 
         cv2.imshow("Source capture", sourceFrameImgResized)
         cv2.imshow("Target capture", targetFrameImgResized)
@@ -101,3 +103,5 @@ print("num matched = ", matched)
 sourceCapture.release()
 targetCapture.release()
 cv2.destroyAllWindows()
+end = timer()
+print(f"Took {end - start}")
