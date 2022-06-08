@@ -1,6 +1,7 @@
 import cv2
 import ffmpeg
-import os 
+import os
+import subprocess
 from skimage.metrics import structural_similarity as ssim
 import numpy as np
 
@@ -115,14 +116,17 @@ if matched == targetFrameCnt and targetFrameIndex == targetFrameCnt:
     # Matched the exact number of frames in the target sequence
     # The target sequence has finished reading through
     # Safe to trim the video out:
-    print("Performing CMD")
-    ffmpegCmd = f"""ffmpeg -i {sourceFile}
-        -vf \"select = 'between(t, {sourceMatch}, {sourceMatch + matched})',
-            setpts = N/FRAME_RATE/TB\"
-        -af \"aselect = 'between(t, {sourceMatch}, {sourceMatch + matched})',
-            asetpts = N/SR/TB\" output.mp4
-        """
-    os.system(ffmpegCmd)
+    ffmpegCmd = f"ffmpeg -i {sourceFile} "\
+        f"-vf \"select = "\
+        f"'between(n, 0, {sourceMatch}) + "\
+        f"between({sourceMatch + matched}, {sourceFrameCnt})', "\
+        "setpts = N/FRAME_RATE/TB\""\
+        f"-af \"aselect = "\
+        f"'between(n, 0, {sourceMatch}) + "\
+        f"between({sourceMatch + matched}, {sourceFrameCnt})', "\
+        "asetpts = N/SR/TB\""\
+        "output.mp4"
+    subprocess.call(ffmpegCmd, shell = True)
     print("Finished CMD")
 
 print("num matched = ", matched)
