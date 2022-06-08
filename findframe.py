@@ -1,13 +1,18 @@
 import cv2
 import ffmpeg
+import os 
 from skimage.metrics import structural_similarity as ssim
 import numpy as np
+
 from timeit import default_timer as timer
 
 start = timer()
+
 # Open video captures:
-sourceCapture = cv2.VideoCapture("DS_ENTERTAINMENT.mp4")
-targetCapture = cv2.VideoCapture("Opening.mp4")
+sourceFile = "DS_ENTERTAINMENT.mp4"
+targetFile = "Opening.mp4"
+sourceCapture = cv2.VideoCapture(sourceFile)
+targetCapture = cv2.VideoCapture(targetFile)
 
 # Constants:
 escape = 27
@@ -17,10 +22,10 @@ space = 32
 similarityThreshold = 0.95
 frameCnt = 0
 matched = 0
-maxFrames = 1000
-desiredDim = (16, 9)
-sourcePercentStart = 0.0
-targetPercentStart = 0.0
+maxFrames = -1
+desiredDim = (160, 90)
+sourcePercentStart = 0.10
+targetPercentStart = 0.00
 
 # Setup data about the source capture and target capture
 sourceFrameIndex = sourceCapture.get(cv2.CAP_PROP_POS_FRAMES)
@@ -48,6 +53,8 @@ targetFlag, targetFrameImg = targetCapture.read()
 targetFrameImgResized = cv2.resize(targetFrameImg, desiredDim)
 targetFrameImgResized = cv2.cvtColor(targetFrameImgResized, cv2.COLOR_BGR2GRAY)
 
+sourceMatch = -1
+
 # Start the main loop of iterating through frames of the source footage
 while sourceCapture.isOpened():
     # Read the next frame of the sourceCapture (colored)
@@ -65,6 +72,9 @@ while sourceCapture.isOpened():
         print(f"SSIM: {ssimFloat}")
 
         if ssimFloat >= similarityThreshold:
+            matched += 1
+            if sourceMatch < 0:
+                sourceMatch = sourceFrameIndex
             sourceTime = sourceFrameIndex / sourceFPS
             targetTime = targetFrameIndex / targetFPS
             print("FOUND SAME FRAME AT FRAME #: ", frameCnt)
@@ -74,15 +84,17 @@ while sourceCapture.isOpened():
             # Read the next frame of the targetCapture
             targetFrameIndex = targetCapture.get(cv2.CAP_PROP_POS_FRAMES)
             targetFlag, targetFrameImg = targetCapture.read()
+            print(f"Target frame index = {targetFrameIndex} / {targetFrameCnt}")
             if targetFlag:
                 targetFrameImg = cv2.cvtColor(targetFrameImg, cv2.COLOR_BGR2GRAY)
                 targetFrameImgResized = cv2.resize(targetFrameImg, desiredDim)
             else:
+                print("Ended the target sequence")
                 break
-            matched += 1
         elif matched:
             targetCapture.set(cv2.CAP_PROP_POS_FRAMES, 0)
             targetFlag, targetFrameImg = targetCapture.read()
+            sourceMatch = -1
 
             matched = 0
         
@@ -98,6 +110,20 @@ while sourceCapture.isOpened():
     if frameCnt == maxFrames:
         break
     frameCnt += 1
+
+if matched == targetFrameCnt and targetFrameIndex == targetFrameCnt:
+    # Matched the exact number of frames in the target sequence
+    # The target sequence has finished reading through
+    # Safe to trim the video out:
+    print("Performing CMD")
+    ffmpegCmd = f"""ffmpeg -i {sourceFile}
+        -vf \"select = 'between(t, {sourceMatch}, {sourceMatch + matched})',
+            setpts = N/FRAME_RATE/TB\"
+        -af \"aselect = 'between(t, {sourceMatch}, {sourceMatch + matched})',
+            asetpts = N/SR/TB\" output.mp4
+        """
+    os.system(ffmpegCmd)
+    print("Finished CMD")
 
 print("num matched = ", matched)
 sourceCapture.release()
