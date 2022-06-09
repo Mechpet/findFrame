@@ -116,15 +116,15 @@ if matched == targetFrameCnt and targetFrameIndex == targetFrameCnt:
     # Matched the exact number of frames in the target sequence
     # The target sequence has finished reading through
     # Safe to trim the video out:
-    ffmpegCmd = f"ffmpeg -i {sourceFile} "\
+    ffmpegCmd = f"C:/ffmpeg/bin/ffmpeg.exe -i {sourceFile} "\
         f"-vf \"select = "\
-        f"'between(n, 0, {sourceMatch}) + "\
-        f"between({sourceMatch + matched}, {sourceFrameCnt})', "\
-        "setpts = N/FRAME_RATE/TB\""\
+        f"'between(n, 0, {int(sourceMatch)}) + "\
+        f"between(n, {int(sourceMatch + matched)}, {int(sourceFrameCnt)})', "\
+        "setpts = N/FRAME_RATE/TB\" "\
         f"-af \"aselect = "\
-        f"'between(n, 0, {sourceMatch}) + "\
-        f"between({sourceMatch + matched}, {sourceFrameCnt})', "\
-        "asetpts = N/SR/TB\""\
+        f"'between(n, 0, {int(sourceMatch)}) + "\
+        f"between(n, {int(sourceMatch + matched)}, {int(sourceFrameCnt)})', "\
+        "asetpts = N/SR/TB\" "\
         "output.mp4"
     subprocess.call(ffmpegCmd, shell = True)
     print("Finished CMD")
