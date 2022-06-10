@@ -121,44 +121,49 @@ while sourceCapture.isOpened():
 
 matchStartTime = sourceMatch / sourceFPS
 matchEndTime = (sourceMatch + matched) / sourceFPS
-file = open("log.txt", "w")
+sourceMatchEnd = sourceMatch + matched + 1
 if matched == targetFrameCnt and targetFrameIndex == targetFrameCnt:
     # Matched the exact number of frames in the target sequence
     # The target sequence has finished reading through
     # Safe to trim the video out:
-    length = 60
+    length = int(sourceFPS * 60)
     index = 1
     startTime = 0
     endTime = length
     executing = True
     while executing:
-        if matchStartTime >= startTime and matchStartTime <= endTime:
-            if matchEndTime + (length - (matchStartTime - startTime)) > sourceDuration:
+        file = open("log.txt", "w")
+        if sourceMatch >= startTime and sourceMatch <= endTime:
+            if matchEndTime + (length - (matchStartTime - startTime)) > sourceFrameCnt:
                 ffmpegCmdSlow = f"C:/ffmpeg/bin/ffmpeg.exe -y -i {sourceFile} "\
-                    f"-vf \"select = "\
-                    f"'between(t, {startTime}, {matchStartTime}) + "\
-                    f"between(t, {matchEndTime}, {sourceDuration})', "\
-                    "setpts = N/FRAME_RATE/TB\" "\
+                    f"-filter_complex \"select = "\
+                    f"'between(n, {startTime}, {sourceMatch}) + "\
+                    f"between(n, {sourceMatchEnd}, {sourceFrameCnt})', "\
+                    "setpts = N/FRAME_RATE/TB[outv]\" "\
                     f"-af \"aselect = "\
-                    f"'between(t, {startTime}, {matchStartTime}) + "\
-                    f"between(t, {matchEndTime}, {sourceDuration})', "\
-                    "asetpts = N/SR/TB\" "\
+                    f"'between(n, {startTime}, {sourceMatch}) + "\
+                    f"between(n, {sourceMatchEnd}, {sourceFrameCnt})', "\
+                    "asetpts = N/SR/TB[outa]\" "\
+                    "-map '[outv]' "\
+                    "-map '[outa]' "\
                     f"{index}.mp4"
                 executing = False
             else:
                 ffmpegCmdSlow = f"C:/ffmpeg/bin/ffmpeg.exe -y -i {sourceFile} "\
-                    f"-vf \"select = "\
-                    f"'between(t, {startTime}, {matchStartTime}) + "\
-                    f"between(t, {matchEndTime}, {matchEndTime + (length - (matchStartTime - startTime))})', "\
-                    "setpts = N/FRAME_RATE/TB\" "\
+                    f"-filter_complex \"select = "\
+                    f"'between(n, {startTime}, {sourceMatch}) + "\
+                    f"between(n, {sourceMatchEnd}, {sourceMatchEnd + (length - (sourceMatch - startTime))})', "\
+                    "setpts = N/FRAME_RATE/TB[outv]\" "\
                     f"-af \"aselect = "\
-                    f"'between(t, {startTime}, {matchStartTime}) + "\
-                    f"between(t, {matchEndTime}, {matchEndTime + (length - (matchStartTime - startTime))})', "\
-                    "asetpts = N/SR/TB\" "\
+                    f"'between(n, {startTime}, {sourceMatch}) + "\
+                    f"between(n, {sourceMatchEnd}, {sourceMatchEnd + (length - (sourceMatch - startTime))})', "\
+                    "asetpts = N/SR/TB[outa]\" "\
+                    "-map '[outv]' "\
+                    "-map '[outa]' "\
                     f"{index}.mp4"
 
-            startTime = length - (matchStartTime - startTime)
-        elif endTime > sourceDuration:
+            startTime = sourceMatchEnd + (length - (sourceMatch - startTime))
+        elif endTime > sourceFrameCnt:
             ffmpegCmdFast = f"C:/ffmpeg/bin/ffmpeg.exe -y -i {sourceFile} "\
                 f"-ss {startTime} "\
                 f"-to {sourceDuration} "\
@@ -166,12 +171,14 @@ if matched == targetFrameCnt and targetFrameIndex == targetFrameCnt:
                 "-map 0 "\
                 f"{index}.mp4"
             ffmpegCmdSlow = f"C:/ffmpeg/bin/ffmpeg.exe -y -i {sourceFile} "\
-                "-vf \"select = "\
-                f"'between(t, {startTime}, {sourceDuration})', "\
-                "setpts = N/FRAME_RATE/TB\" "\
+                "-filter_complex \"select = "\
+                f"'between(n, {startTime}, {sourceFrameCnt})', "\
+                "setpts = N/FRAME_RATE/TB[outv]\" "\
                 f"-af \"aselect = "\
-                f"'between(t, {startTime}, {sourceDuration})', "\
-                "asetpts = N/SR/TB\" "\
+                f"'between(n, {startTime}, {sourceFrameCnt})', "\
+                "asetpts = N/SR/TB[outa]\" "\
+                "-map '[outv]' "\
+                "-map '[outa]' "\
                 f"{index}.mp4"
             executing = False
         else:
@@ -182,22 +189,24 @@ if matched == targetFrameCnt and targetFrameIndex == targetFrameCnt:
                 "-map 0 "\
                 f"{index}.mp4"
             ffmpegCmdSlow = f"C:/ffmpeg/bin/ffmpeg.exe -y -i {sourceFile} "\
-                "-vf \"select = "\
-                f"'between(t, {startTime}, {endTime})', "\
-                "setpts = N/FRAME_RATE/TB\" "\
+                "-filter_complex \"select = "\
+                f"'between(n, {startTime}, {endTime})', "\
+                "setpts = N/FRAME_RATE/TB[outv]\" "\
                 f"-af \"aselect = "\
-                f"'between(t, {startTime}, {endTime})', "\
-                "asetpts = N/SR/TB\" "\
+                f"'between(n, {startTime}, {endTime})', "\
+                "asetpts = N/SR/TB[outa]\" "\
+                "-map '[outv]' "\
+                "-map '[outa]' "\
                 f"{index}.mp4"
 
             startTime = endTime
         
         endTime = startTime + length
-        subprocess.call(ffmpegCmdFast, shell = True)
         file.write(ffmpegCmdSlow + "\n")
+        file.close()
+        subprocess.call(ffmpegCmdSlow, shell = True)
 
         index += 1
-file.close()
 
 def copyTrim():
     ffmpegCmd = f"C:/ffmpeg/bin/ffmpeg.exe -y -i {sourceFile} "\
