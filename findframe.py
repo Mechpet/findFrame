@@ -58,7 +58,7 @@ targetFlag, targetFrameImg = targetCapture.read()
 targetFrameImgResized = cv2.resize(targetFrameImg, desiredDim)
 targetFrameImgResized = cv2.cvtColor(targetFrameImgResized, cv2.COLOR_BGR2GRAY)
 
-sourceMatch = -1
+matchStartFrame = -1
 
 # Start the main loop of iterating through frames of the source footage
 while sourceCapture.isOpened():
@@ -78,8 +78,8 @@ while sourceCapture.isOpened():
 
         if ssimFloat >= similarityThreshold:
             matched += 1
-            if sourceMatch < 0:
-                sourceMatch = sourceFrameIndex
+            if matchStartFrame < 0:
+                matchStartFrame = sourceFrameIndex
             sourceTime = sourceFrameIndex / sourceFPS
             targetTime = targetFrameIndex / targetFPS
             if showStatus:
@@ -101,7 +101,7 @@ while sourceCapture.isOpened():
         elif matched:
             targetCapture.set(cv2.CAP_PROP_POS_FRAMES, 0)
             targetFlag, targetFrameImg = targetCapture.read()
-            sourceMatch = -1
+            matchStartFrame = -1
 
             matched = 0
         
@@ -119,89 +119,87 @@ while sourceCapture.isOpened():
         break
     frameCnt += 1
 
-matchStartTime = sourceMatch / sourceFPS
-matchEndTime = (sourceMatch + matched) / sourceFPS
-sourceMatchEnd = sourceMatch + matched + 1
+matchStartTime = matchStartFrame / sourceFPS
+matchEndTime = (matchStartFrame + matched) / sourceFPS
+matchEndFrame = matchStartFrame + matched + 1
+
+useTime = True
+index = 1
+if useTime:
+    sampling = 't'
+    length = 60
+    matchStart = matchStartTime
+    matchEnd = matchEndTime
+    max = int(sourceFrameCnt / sourceFPS)
+else:
+    sampling = 'n'
+    length = int(sourceFPS * 60)
+    matchStart = matchStartFrame
+    matchEnd = matchEndFrame
+    max = sourceFrameCnt
+
+start = 0
+end = length
 if matched == targetFrameCnt and targetFrameIndex == targetFrameCnt:
     # Matched the exact number of frames in the target sequence
     # The target sequence has finished reading through
     # Safe to trim the video out:
-    length = int(sourceFPS * 60)
-    index = 1
-    startTime = 0
-    endTime = length
     executing = True
     while executing:
-        file = open("log.txt", "w")
-        if sourceMatch >= startTime and sourceMatch <= endTime:
-            if matchEndTime + (length - (matchStartTime - startTime)) > sourceFrameCnt:
+        file = open("log.txt", "a")
+        if matchStart >= start and matchStart <= end:
+            if matchEnd + (length - (matchStart - start)) > max:
                 ffmpegCmdSlow = f"C:/ffmpeg/bin/ffmpeg.exe -y -i {sourceFile} "\
                     f"-filter_complex \"select = "\
-                    f"'between(n, {startTime}, {sourceMatch}) + "\
-                    f"between(n, {sourceMatchEnd}, {sourceFrameCnt})', "\
-                    "setpts = N/FRAME_RATE/TB[outv]\" "\
+                    f"'between({sampling}, {start}, {matchStart}) + "\
+                    f"between({sampling}, {matchEnd}, {max})', "\
+                    "setpts = N/FRAME_RATE/TB\" "\
                     f"-af \"aselect = "\
-                    f"'between(n, {startTime}, {sourceMatch}) + "\
-                    f"between(n, {sourceMatchEnd}, {sourceFrameCnt})', "\
-                    "asetpts = N/SR/TB[outa]\" "\
-                    "-map '[outv]' "\
-                    "-map '[outa]' "\
+                    f"'between({sampling}, {start}, {matchStart}) + "\
+                    f"between({sampling}, {matchEnd}, {max})', "\
+                    "asetpts = N/SR/TB\" "\
+                    "-map 0 "\
                     f"{index}.mp4"
                 executing = False
             else:
                 ffmpegCmdSlow = f"C:/ffmpeg/bin/ffmpeg.exe -y -i {sourceFile} "\
                     f"-filter_complex \"select = "\
-                    f"'between(n, {startTime}, {sourceMatch}) + "\
-                    f"between(n, {sourceMatchEnd}, {sourceMatchEnd + (length - (sourceMatch - startTime))})', "\
-                    "setpts = N/FRAME_RATE/TB[outv]\" "\
+                    f"'between({sampling}, {start}, {matchStart}) + "\
+                    f"between({sampling}, {matchEnd}, {matchEnd + (length - (matchStart - start))})', "\
+                    "setpts = N/FRAME_RATE/TB\" "\
                     f"-af \"aselect = "\
-                    f"'between(n, {startTime}, {sourceMatch}) + "\
-                    f"between(n, {sourceMatchEnd}, {sourceMatchEnd + (length - (sourceMatch - startTime))})', "\
-                    "asetpts = N/SR/TB[outa]\" "\
-                    "-map '[outv]' "\
-                    "-map '[outa]' "\
+                    f"'between({sampling}, {start}, {matchStart}) + "\
+                    f"between({sampling}, {matchEnd}, {matchEnd + (length - (matchStart - start))})', "\
+                    "asetpts = N/SR/TB\" "\
+                    "-map 0 "\
                     f"{index}.mp4"
 
-            startTime = sourceMatchEnd + (length - (sourceMatch - startTime))
-        elif endTime > sourceFrameCnt:
-            ffmpegCmdFast = f"C:/ffmpeg/bin/ffmpeg.exe -y -i {sourceFile} "\
-                f"-ss {startTime} "\
-                f"-to {sourceDuration} "\
-                f"-c copy "\
-                "-map 0 "\
-                f"{index}.mp4"
+            start = matchEnd + (length - (matchStart - start))
+        elif end > max:
             ffmpegCmdSlow = f"C:/ffmpeg/bin/ffmpeg.exe -y -i {sourceFile} "\
                 "-filter_complex \"select = "\
-                f"'between(n, {startTime}, {sourceFrameCnt})', "\
-                "setpts = N/FRAME_RATE/TB[outv]\" "\
+                f"'between({sampling}, {start}, {max})', "\
+                "setpts = N/FRAME_RATE/TB\" "\
                 f"-af \"aselect = "\
-                f"'between(n, {startTime}, {sourceFrameCnt})', "\
-                "asetpts = N/SR/TB[outa]\" "\
-                "-map '[outv]' "\
-                "-map '[outa]' "\
+                f"'between({sampling}, {start}, {max})', "\
+                "asetpts = N/SR/TB\" "\
+                "-map 0 "\
                 f"{index}.mp4"
             executing = False
         else:
-            ffmpegCmdFast = f"C:/ffmpeg/bin/ffmpeg.exe -y -i {sourceFile} "\
-                f"-ss {startTime} "\
-                f"-to {endTime} "\
-                f"-c copy "\
-                "-map 0 "\
-                f"{index}.mp4"
             ffmpegCmdSlow = f"C:/ffmpeg/bin/ffmpeg.exe -y -i {sourceFile} "\
                 "-filter_complex \"select = "\
-                f"'between(n, {startTime}, {endTime})', "\
-                "setpts = N/FRAME_RATE/TB[outv]\" "\
+                f"'between({sampling}, {start}, {end})', "\
+                "setpts = N/FRAME_RATE/TB\" "\
                 f"-af \"aselect = "\
-                f"'between(n, {startTime}, {endTime})', "\
-                "asetpts = N/SR/TB[outa]\" "\
-                "-map '[outv]' "\
-                "-map '[outa]' "\
+                f"'between({sampling}, {start}, {end})', "\
+                "asetpts = N/SR/TB\" "\
+                "-map 0 "\
                 f"{index}.mp4"
 
-            startTime = endTime
+            start = end
         
-        endTime = startTime + length
+        end = start + length
         file.write(ffmpegCmdSlow + "\n")
         file.close()
         subprocess.call(ffmpegCmdSlow, shell = True)
@@ -211,12 +209,12 @@ if matched == targetFrameCnt and targetFrameIndex == targetFrameCnt:
 def copyTrim():
     ffmpegCmd = f"C:/ffmpeg/bin/ffmpeg.exe -y -i {sourceFile} "\
         f"-vf \"select = "\
-        f"'between(n, 0, {int(sourceMatch)}) + "\
-        f"between(n, {int(sourceMatch + matched)}, {int(sourceFrameCnt)})', "\
+        f"'between(n, 0, {int(matchStartFrame)}) + "\
+        f"between(n, {int(matchStartFrame + matched)}, {int(sourceFrameCnt)})', "\
         "setpts = N/FRAME_RATE/TB\" "\
         f"-af \"aselect = "\
-        f"'between(n, 0, {int(sourceMatch)}) + "\
-        f"between(n, {int(sourceMatch + matched)}, {int(sourceFrameCnt)})', "\
+        f"'between(n, 0, {int(matchStartFrame)}) + "\
+        f"between(n, {int(matchStartFrame + matched)}, {int(sourceFrameCnt)})', "\
         "asetpts = N/SR/TB\" "\
         "output.mp4"
     subprocess.call(ffmpegCmd, shell = True)
