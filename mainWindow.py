@@ -3,6 +3,8 @@ import sys
 from PyQt6.QtWidgets import QApplication, QWidget, QLabel, QGridLayout, QLineEdit, QPushButton
 from PyQt6.QtCore import Qt
 
+from target import target
+
 app = QApplication(sys.argv)
 
 sourceLabelColumnSpan = 3
@@ -21,10 +23,12 @@ class mainWindow(QWidget):
         self.sourceLabel.setToolTip("Primary video file to take slices out of.")
         self.sourceInput = QLineEdit()
         self.sourceBrowser = QPushButton("Browse")
+        self.target = target()
 
         self.layout.addWidget(self.sourceLabel, 0, 0, 1, sourceLabelColumnSpan)
         self.layout.addWidget(self.sourceInput, 0, sourceLabelColumnSpan + 1, 1, sourceInputColumnSpan)
         self.layout.addWidget(self.sourceBrowser, 0, sourceLabelColumnSpan + sourceInputColumnSpan + 1, 1, 1)
+        self.layout.addWidget(self.target, 1, 0)
 
         self.setLayout(self.layout)
         self.show()
