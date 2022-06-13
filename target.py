@@ -11,6 +11,21 @@ acceptedExtensions = (
     ".mkv"
 )
 
+class targetHeader(QWidget):
+    """Header that tells the user what each column represents"""
+    def __init__(self):
+        super().__init__()
+        self.initUI()
+
+    def initUI(self):
+        layout = QHBoxLayout()
+        layout.addSpacing(75)
+        layout.addWidget(QLabel("Video path"))
+        layout.addSpacing(325)
+        layout.addWidget(QLabel("Source range"))
+        
+        self.setLayout(layout)
+
 class target(QWidget):
     """Represents a target video to 'slice' out of the source video"""
     def __init__(self):
@@ -24,9 +39,11 @@ class target(QWidget):
 
         self.fileEdit = QLineEdit()
         self.fileEdit.textEdited.connect(self.setVideo)
+        self.fileEdit.setFixedWidth(200)
         self.fileBrowse = QPushButton("Browse")
         self.validation = QLabel("Invalid video")
         self.bounds = QLabeledRangeSlider(Qt.Orientation.Horizontal)
+        self.bounds.setFixedWidth(200)
         self.bounds.setMaximum(100)
         self.bounds.setValue((0, 100))
 
@@ -34,8 +51,10 @@ class target(QWidget):
 
         self.layout.addWidget(self.fileEdit)
         self.layout.addWidget(self.fileBrowse)
+        self.layout.addSpacing(25)
         self.layout.addWidget(self.validation)
-        self.layout.addWidget(self.bounds, Qt.AlignmentFlag.AlignTop)
+        self.layout.addSpacing(25)
+        self.layout.addWidget(self.bounds)
 
         self.setLayout(self.layout)
 

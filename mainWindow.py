@@ -1,9 +1,10 @@
 import sys
 
-from PyQt6.QtWidgets import QApplication, QWidget, QLabel, QGridLayout, QLineEdit, QPushButton
+from PyQt6.QtWidgets import QApplication, QWidget, QLabel, QGridLayout, QLineEdit, QPushButton, QScrollArea
 from PyQt6.QtCore import Qt
 
-from target import target
+from target import targetHeader
+from targetList import targetList
 
 app = QApplication(sys.argv)
 
@@ -23,12 +24,23 @@ class mainWindow(QWidget):
         self.sourceLabel.setToolTip("Primary video file to take slices out of.")
         self.sourceInput = QLineEdit()
         self.sourceBrowser = QPushButton("Browse")
-        self.target = target()
+        self.targetList = targetList()
+        self.sliceBtn = QPushButton("Execute")
+
+        self.targetHeader = targetHeader()
+
+        self.targetListScroll = QScrollArea()
+        self.targetListScroll.setWidget(self.targetList)
+        self.targetListScroll.setWidgetResizable(True)
+        self.targetListScroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        self.targetListScroll.horizontalScrollBar().setDisabled(True)
 
         self.layout.addWidget(self.sourceLabel, 0, 0, 1, sourceLabelColumnSpan)
         self.layout.addWidget(self.sourceInput, 0, sourceLabelColumnSpan + 1, 1, sourceInputColumnSpan)
         self.layout.addWidget(self.sourceBrowser, 0, sourceLabelColumnSpan + sourceInputColumnSpan + 1, 1, 1)
-        self.layout.addWidget(self.target, 1, 0)
+        self.layout.addWidget(self.targetHeader, 1, 0, 1, -1)
+        self.layout.addWidget(self.targetListScroll, 2, 0, 4, -1)
+        self.layout.addWidget(self.sliceBtn, 7, 0, 2, 2)
 
         self.setLayout(self.layout)
         self.show()
