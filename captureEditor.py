@@ -1,4 +1,4 @@
-from PyQt6.QtWidgets import QWidget, QGridLayout, QLabel, QLineEdit, QPushButton, QScrollArea
+from PyQt6.QtWidgets import QWidget, QGridLayout, QLabel, QLineEdit, QPushButton, QScrollArea, QFileDialog
 from PyQt6.QtCore import Qt
 
 from target import targetHeader
@@ -20,7 +20,10 @@ class captureEditor(QWidget):
         self.sourceLabel = QLabel("Source file")
         self.sourceLabel.setToolTip("Primary video file to take slices out of.")
         self.sourceInput = QLineEdit()
+
         self.sourceBrowser = QPushButton("Browse")
+        self.sourceBrowser.clicked.connect(self.openFileDialog)
+
         self.targetList = targetList()
 
         self.targetHeader = targetHeader()
@@ -38,3 +41,19 @@ class captureEditor(QWidget):
         self.layout.addWidget(self.targetListScroll, 2, 0, 4, -1)
 
         self.setLayout(self.layout)
+
+    def openFileDialog(self):
+        """Open a fileDialog that prompts the user for a file"""
+
+        # Initialize the file dialog for a single image
+        self.dialog = QFileDialog()
+        # Set initial filter to image file extensions only
+        self.dialog.setNameFilter(self.tr("Videos (*.mp4 *.m4v *.mov *.mkv)"))
+        # Accept only one single file
+        self.dialog.setFileMode(QFileDialog.FileMode.ExistingFile)
+        # Instead of 'Open' button, use 'Save' button
+        self.dialog.setAcceptMode(QFileDialog.AcceptMode.AcceptSave)
+
+        self.dialog.setWindowModality(Qt.WindowModality.ApplicationModal)
+        self.dialog.fileSelected.connect(self.sourceInput.setText)
+        self.dialog.show()

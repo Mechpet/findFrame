@@ -19,9 +19,13 @@ class mainWindow(QWidget):
     def initUI(self):
         self.setFixedSize(750, 600)
 
+        self.captureEditor = captureEditor()
+        self.videoSettings = videoSettings()
+        self.captureEditor.sourceInput.textChanged.connect(self.videoSettings.setAspectRatio)
+
         self.tabWidget = QTabWidget()
-        self.tabWidget.addTab(captureEditor(), "Videos")
-        self.tabWidget.addTab(videoSettings(), "Settings")
+        self.tabWidget.addTab(self.captureEditor, "Videos")
+        self.tabWidget.addTab(self.videoSettings, "Settings")
         self.executeBtn = QPushButton("Execute")
 
         self.layout = QGridLayout()

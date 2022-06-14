@@ -1,17 +1,21 @@
 from PyQt6.QtWidgets import QWidget, QSlider, QLineEdit, QGridLayout, QLabel
-from PyQt6.QtCore import Qt
+from PyQt6.QtCore import Qt, pyqtSlot
 from PyQt6.QtGui import QDoubleValidator
+import cv2
+
+from videoChecker import videoValidity
 
 class videoSettings(QWidget):
     def __init__(self):
         super().__init__()
         self.setStyleSheet("""
             QLineEdit#dimensions {
-                border: none;
-                background: transparent;
                 color: blue;
             }
         """)
+
+        self.capWidth = 0
+        self.capHeight = 0
 
         self.initUI()
 
@@ -36,6 +40,11 @@ class videoSettings(QWidget):
         self.compareHeight = QLineEdit("1080")
         self.compareHeight.setObjectName("dimensions")
 
+        self.compareWidth.editingFinished.connect(self.updateHeight)
+        self.compareHeight.editingFinished.connect(self.updateWidth)
+
+        self.thresholdSlider.valueChanged.connect(lambda: self.thresholdEdit.setText(str(self.thresholdSlider.value())))
+
         self.layout.addWidget(self.thresholdLabel, 0, 0, 1, 1)
         self.layout.addWidget(self.thresholdEdit, 0, 1, 1, 1)
         self.layout.addWidget(self.thresholdSlider, 0, 2, 1, 3)
@@ -47,6 +56,25 @@ class videoSettings(QWidget):
 
         self.setLayout(self.layout)
 
+    @pyqtSlot(str)
+    def setAspectRatio(self, path):
+        """Sets the aspect ratio connected by the two dimensions given the path to a video file"""
+        if videoValidity(path):
+            # cv2 method:
+            temp = cv2.VideoCapture(path)
+            if temp.isOpened():
+                self.capWidth = temp.get(cv2.CAP_PROP_FRAME_WIDTH)
+                self.capHeight = temp.get(cv2.CAP_PROP_FRAME_HEIGHT)
+            temp.release()
 
+    def updateWidth(self):
+        if self.capHeight and self.capWidth:
+            if self.compareHeight.text():
+                ratio = self.capWidth / self.capHeight
+                self.compareWidth.setText(str(int(ratio * int(self.compareHeight.text()))))
 
-        
+    def updateHeight(self):
+        if self.capHeight and self.capWidth:
+            if self.compareWidth.text():
+                ratio = self.capHeight / self.capWidth
+                self.compareHeight.setText(str(int(ratio * int(self.compareWidth.text()))))
