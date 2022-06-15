@@ -1,7 +1,7 @@
 import sys
 
 from PyQt6.QtWidgets import QApplication, QWidget, QLabel, QGridLayout, QLineEdit, QPushButton, QScrollArea, QTabWidget
-from PyQt6.QtCore import Qt
+from PyQt6.QtCore import Qt, QThreadPool, QRunnable
 
 from captureEditor import captureEditor
 from videoSettings import videoSettings
@@ -15,6 +15,8 @@ sourceInputColumnSpan = 6
 class mainWindow(QWidget):
     def __init__(self):
         super().__init__()
+        self.threadpool = QThreadPool()
+
         self.initUI()
 
     def initUI(self):
@@ -28,7 +30,7 @@ class mainWindow(QWidget):
         self.tabWidget.addTab(self.captureEditor, "Videos")
         self.tabWidget.addTab(self.videoSettings, "Settings")
         self.executeBtn = QPushButton("Execute")
-        self.executeBtn.clicked.connect(self.callSlicer)
+        self.executeBtn.clicked.connect(self.startSlice)
 
         self.layout = QGridLayout()
         self.layout.addWidget(self.tabWidget, 1, 0)
@@ -37,18 +39,41 @@ class mainWindow(QWidget):
         
         self.show()
 
-    def callSlicer(self):
+    def startSlice(self):
+        """Lock important widgets and create a new worker"""
+        self.createSliceWorker()
+
+    def createSliceWorker(self):
+        """Get all of the information the user inputted"""
         sourceFile = self.captureEditor.sourceInput.text()
         targetFiles = []
         targetSSIMs = []
         sourceRanges = []
         dimensions = (int(self.videoSettings.compareWidth.text()), int(self.videoSettings.compareHeight.text()))
-        print("Dimensions are  = ", dimensions)
         for i in range(self.captureEditor.targetList.layout.count() - 1):
             targetFiles.append(self.captureEditor.targetList.layout.itemAt(i).widget().fileEdit.text())
             targetSSIMs.append(slicer.DEFAULT_SSIM)
             sourceRanges.append(self.captureEditor.targetList.layout.itemAt(i).widget().bounds.value())
-        slicer.slice(sourceFile, targetFiles, targetSSIMs, sourceRanges, slicer.DEFAULT_SLICE_LENGTH, dimensions)
+
+        worker = sliceWorker(sourceFile, targetFiles, targetSSIMs, sourceRanges, slicer.DEFAULT_SLICE_LENGTH, dimensions)
+        self.threadpool.start(worker)
+
+    def closeEvent(self, event):
+        
+        event.accept()
+
+class sliceWorker(QRunnable):
+    def __init__(self, sourceFile, targetFiles, targetSSIMs, sourceRanges, sliceLength, dimensions):
+        super().__init__()
+        self.sourceFile = sourceFile
+        self.targetFiles = targetFiles
+        self.targetSSIMs = targetSSIMs
+        self.sourceRanges = sourceRanges
+        self.sliceLength = sliceLength
+        self.dimensions = dimensions
+
+    def run(self):
+        slicer.slice(self.sourceFile, self.targetFiles, self.targetSSIMs, self.sourceRanges, slicer.DEFAULT_SLICE_LENGTH, self.dimensions)
 
 def main():
     window = mainWindow()
