@@ -83,6 +83,7 @@ class sliceWorker(QObject):
         slicer.slice(self.sourceFile, self.targetFiles, self.targetSSIMs, self.sourceRanges, slicer.DEFAULT_SLICE_LENGTH, self.dimensions)
 
 def main():
+    slicer.executingFlag = False
     window = mainWindow()
 
     sys.exit(app.exec())

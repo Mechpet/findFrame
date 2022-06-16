@@ -11,8 +11,6 @@ showStatus = False
 DEFAULT_SSIM = 0.95
 DEFAULT_SLICE_LENGTH = 60
 
-executingFlag = False
-
 class captureAttributes:
     def __init__(self, fileName):
         capture = cv2.VideoCapture(fileName)
@@ -20,6 +18,7 @@ class captureAttributes:
         self.FPS = capture.get(cv2.CAP_PROP_FPS)
 
 def slice(sourceFile, targetFiles, targetSSIMs, sourceRanges, sliceDuration, dimensions):
+    global executingFlag
     matchingFrames = match(sourceFile, targetFiles, targetSSIMs, sourceRanges, dimensions)
     print(matchingFrames)
 
@@ -48,42 +47,31 @@ def slice(sourceFile, targetFiles, targetSSIMs, sourceRanges, sliceDuration, dim
     matchStart = targetMatches[targetIndex][0]
     matchEnd = targetMatches[targetIndex][1]
     while executingFlag:
+        print("Executing")
         if matchStart >= start and matchStart <= end:
             # Found a match within the current slice
-            if matchEnd + (length - (matchStart - start)) > max:
-                ffmpegCmdSlow = f"C:/ffmpeg/bin/ffmpeg.exe -y -i {sourceFile} "\
-                    f"-filter_complex \"select = "\
-                    f"'between({sampling}, {start}, {matchStart - 1}) + "\
-                    f"between({sampling}, {matchEnd + 1}, {max})', "\
-                    "setpts = N/FRAME_RATE/TB\" "\
-                    f"-af \"aselect = "\
-                    f"'between({sampling}, {start}, {matchStart - 1}) + "\
-                    f"between({sampling}, {matchEnd + 1}, {max})', "\
-                    "asetpts = N/SR/TB\" "\
-                    "-map 0 "\
-                    f"{sliceIndex}.mp4"
+            while matchStart >= sliceRange[-1][0] and matchStart <= sliceRange[-1][1]:
+                sliceRange[-1][1] = matchStart + 1
+                sliceRange.append([matchEnd, matchEnd + (length - (matchStart - start))])
+                targetIndex += 1
+                matchStart = targetMatches[targetIndex][0]
+                matchEnd = targetMatches[targetIndex][1]
+
+            betweenStringArgs = betweenString(sliceRange, sampling, max)
+
+            ffmpegCmdSlow = f"C:/ffmpeg/bin/ffmpeg.exe -y -i {sourceFile} "\
+                f"-filter_complex \"select = "\
+                f"'{betweenStringArgs}', "\
+                "setpts = N/FRAME_RATE/TB\" "\
+                f"-af \"aselect = "\
+                f"'{betweenStringArgs}', "\
+                "asetpts = N/SR/TB\" "\
+                "-map 0 "\
+                f"{sliceIndex}.mp4"
+
+            start = sliceRange[-1][1]
+            if start >= max:
                 executingFlag = False
-            else:
-                while matchStart >= sliceRange[-1][0] and matchStart <= sliceRange[-1][1]:
-                    sliceRange[-1][1] = matchStart + 1
-                    sliceRange.append([matchEnd, matchEnd + (length - (matchStart - start))])
-                    targetIndex += 1
-                    matchStart = targetMatches[targetIndex][0]
-                    matchEnd = targetMatches[targetIndex][1]
-
-                ffmpegCmdSlow = f"C:/ffmpeg/bin/ffmpeg.exe -y -i {sourceFile} "\
-                    f"-filter_complex \"select = "\
-                    f"'between({sampling}, {start}, {matchStart}) + "\
-                    f"between({sampling}, {matchEnd}, {matchEnd + (length - (matchStart - start))})', "\
-                    "setpts = N/FRAME_RATE/TB\" "\
-                    f"-af \"aselect = "\
-                    f"'between({sampling}, {start}, {matchStart}) + "\
-                    f"between({sampling}, {matchEnd}, {matchEnd + (length - (matchStart - start))})', "\
-                    "asetpts = N/SR/TB\" "\
-                    "-map 0 "\
-                    f"{sliceIndex}.mp4"
-
-            start = matchEnd + (length - (matchStart - start))
         elif end > max:
             ffmpegCmdSlow = f"C:/ffmpeg/bin/ffmpeg.exe -y -i {sourceFile} "\
                 "-filter_complex \"select = "\
@@ -94,7 +82,7 @@ def slice(sourceFile, targetFiles, targetSSIMs, sourceRanges, sliceDuration, dim
                 "asetpts = N/SR/TB\" "\
                 "-map 0 "\
                 f"{sliceIndex}.mp4"
-            executing = False
+            executingFlag = False
         else:
             ffmpegCmdSlow = f"C:/ffmpeg/bin/ffmpeg.exe -y -i {sourceFile} "\
                 "-filter_complex \"select = "\
@@ -112,8 +100,10 @@ def slice(sourceFile, targetFiles, targetSSIMs, sourceRanges, sliceDuration, dim
         subprocess.call(ffmpegCmdSlow, shell = True)
 
         sliceIndex += 1
+    
+    print('Finished')
 
-def betweenString(ranges, sampling):
+def betweenString(ranges, sampling, max):
     """Return the string of betweens"""
     strings = []
     for range in ranges:
@@ -121,7 +111,7 @@ def betweenString(ranges, sampling):
         if range[1] < range[0]:
             pass
         else:
-            strings.append(f"between({sampling}, {range[0]}, {range[1]})")
+            strings.append(f"between({sampling}, {range[0]}, {min(max, range[1])})")
     
     return " + ".join(strings)
 
