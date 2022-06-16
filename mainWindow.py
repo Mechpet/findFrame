@@ -79,6 +79,7 @@ class sliceWorker(QObject):
 
     @pyqtSlot()
     def run(self):
+        slicer.executingFlag = True
         slicer.slice(self.sourceFile, self.targetFiles, self.targetSSIMs, self.sourceRanges, slicer.DEFAULT_SLICE_LENGTH, self.dimensions)
 
 def main():
