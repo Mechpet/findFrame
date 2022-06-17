@@ -6,6 +6,7 @@ import cv2
 from videoChecker import videoValidity
 
 MINIMUM_DIMENSIONS = "24"
+MINIMUM_THRESHOLD = "0.0"
 
 class videoSettings(QWidget):
     def __init__(self):
@@ -28,7 +29,7 @@ class videoSettings(QWidget):
         self.thresholdEdit = QLineEdit()
         self.thresholdEdit.setPlaceholderText("95.0")
         self.thresholdEdit.setValidator(QDoubleValidator())
-        self.thresholdEdit.editingFinished.connect(lambda: self.thresholdSlider.setValue(float(self.thresholdEdit.text())))
+        self.thresholdEdit.editingFinished.connect(self.updateThresholdEdit)
         self.thresholdSlider = QSlider(Qt.Orientation.Horizontal)
         self.thresholdSlider.setMinimum(0.00)
         self.thresholdSlider.setMaximum(100.00)
@@ -75,7 +76,7 @@ class videoSettings(QWidget):
     def updateWidth(self):
         # Check if there's a capture selected by probing the dimension attributes
         if self.capHeight and self.capWidth:
-            if not self.compareHeight.text():
+            if not self.compareHeight.text() or self.compareHeight.text() < MINIMUM_DIMENSIONS:
                 self.compareHeight.setText(MINIMUM_DIMENSIONS)
             ratio = self.capWidth / self.capHeight
             self.compareWidth.setText(str(int(ratio * int(self.compareHeight.text()))))
@@ -83,7 +84,13 @@ class videoSettings(QWidget):
     @pyqtSlot()
     def updateHeight(self):
         if self.capHeight and self.capWidth:
-            if not self.compareWidth.text():
+            if not self.compareWidth.text() or self.compareWidth.text() < MINIMUM_DIMENSIONS:
                 self.compareWidth.setText(MINIMUM_DIMENSIONS)
             ratio = self.capHeight / self.capWidth
             self.compareHeight.setText(str(int(ratio * int(self.compareWidth.text()))))
+
+    @pyqtSlot()
+    def updateThresholdEdit(self):
+        if not self.thresholdEdit.text() or self.thresholdEdit.text() < MINIMUM_THRESHOLD:
+            self.thresholdEdit.setText(MINIMUM_THRESHOLD)
+        self.thresholdSlider.setValue(float(self.thresholdEdit.text()))

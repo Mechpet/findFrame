@@ -45,10 +45,12 @@ class mainWindow(QWidget):
         
         self.show()
 
+    @pyqtSlot()
     def startSlice(self):
         """Lock important widgets and create a new worker"""
         self.createSliceWorker()
 
+    @pyqtSlot()
     def stopSlicing(self):
         slicer.executingFlag = False
 
@@ -80,20 +82,20 @@ class mainWindow(QWidget):
 
 class sliceWorker(QObject):
     ready = pyqtSignal()
-    def __init__(self, sourceFile, targetFiles, targetSSIMs, sourceRanges, sliceLength, dimensions):
+    def __init__(self, sourceFile, targetFiles, targetSSIMs, sourceRanges, sliceDuration, dimensions):
         super().__init__()
         self.sourceFile = sourceFile
         self.targetFiles = targetFiles
         self.targetSSIMs = targetSSIMs
         self.sourceRanges = sourceRanges
-        self.sliceLength = sliceLength
+        self.sliceDuration = sliceDuration
         self.dimensions = dimensions
         self.ready.connect(self.run)
 
     @pyqtSlot()
     def run(self):
         slicer.executingFlag = True
-        slicer.slice(self.sourceFile, self.targetFiles, self.targetSSIMs, self.sourceRanges, slicer.DEFAULT_SLICE_LENGTH, self.dimensions)
+        slicer.slice(self.sourceFile, self.targetFiles, self.targetSSIMs, self.sourceRanges, self.sliceDuration, self.dimensions)
 
 def main():
     slicer.executingFlag = False

@@ -1,5 +1,5 @@
 from PyQt6.QtWidgets import QWidget, QLineEdit, QLabel, QRadioButton, QButtonGroup, QFileDialog, QPushButton, QGridLayout
-from PyQt6.QtCore import Qt
+from PyQt6.QtCore import Qt, pyqtSlot
 
 class outputSettings(QWidget):
     def __init__(self):
@@ -40,6 +40,7 @@ class outputSettings(QWidget):
 
         self.setLayout(layout)
 
+    @pyqtSlot()
     def openDirectoryDialog(self):
         self.dialog = QFileDialog()
         
@@ -56,6 +57,7 @@ class outputSettings(QWidget):
         self.dialog.fileSelected.connect(self.outputDirectoryEdit.setText)
         self.dialog.show()
 
+    @pyqtSlot()
     def updatePreview(self):
         if self.beforeBtn.isChecked():
             self.outputPreview.setText(f"0{self.outputTemplate.text()}.mp4")
