@@ -7,6 +7,8 @@ import numpy as np
 
 from timeit import default_timer as timer
 
+from target import target
+
 showStatus = False
 DEFAULT_SSIM = 0.95
 DEFAULT_SLICE_LENGTH = 60
@@ -25,6 +27,9 @@ def slice(sourceFile, targetFiles, targetSSIMs, sourceRanges, sliceDuration, dim
     sourceProps = captureAttributes(sourceFile)
     targetsProps = [captureAttributes(targetFile) for targetFile in targetFiles]
     targetMatches = [(matchingFrames[i], matchingFrames[i] + targetsProps[i].frameCnt) for i in range(len(matchingFrames))]
+    # Convert the targetMatches to seconds
+    targetMatches = [(targetMatches[i][0] / targetsProps[i].FPS, targetMatches[i][1] / targetsProps[i].FPS) for i in range(len(targetMatches))]
+
     # match = [(start, end), (start, end), ...]
     # Get the list of the matches from above -> Sorted (lower the index, the lower the starting frame index)
     # Start slicing the source capture
@@ -35,27 +40,37 @@ def slice(sourceFile, targetFiles, targetSSIMs, sourceRanges, sliceDuration, dim
     # Matched the exact number of frames in the target sequence
     # The target sequence has finished reading through
     # Safe to trim the video out:
-    start = 0
+    sampling = 't'
     sliceIndex = 1
     targetIndex = 0
-    sampling = 'n'
-    length = int(sourceProps.FPS * 60)
-    max = sourceProps.frameCnt
-    end = sliceDuration
+    if sampling == 'n':
+        start = 0
+        length = int(sourceProps.FPS * sliceDuration)
+        max = sourceProps.frameCnt
+    elif sampling == 't':
+        start = 0
+        length = sliceDuration
+        max = sourceProps.frameCnt / sourceProps.FPS
+    end = length
     sliceRange = [[start, end]]
 
     matchStart = targetMatches[targetIndex][0]
     matchEnd = targetMatches[targetIndex][1]
     while executingFlag:
-        print("Executing")
+        file = open("log.txt", "a")
         if matchStart >= start and matchStart <= end:
+            file.write("Case 1:\n")
+            sliceRange = [[start, end]]
             # Found a match within the current slice
             while matchStart >= sliceRange[-1][0] and matchStart <= sliceRange[-1][1]:
                 sliceRange[-1][1] = matchStart + 1
                 sliceRange.append([matchEnd, matchEnd + (length - (matchStart - start))])
                 targetIndex += 1
-                matchStart = targetMatches[targetIndex][0]
-                matchEnd = targetMatches[targetIndex][1]
+                if targetIndex < len(targetMatches):
+                    matchStart = targetMatches[targetIndex][0]
+                    matchEnd = targetMatches[targetIndex][1]
+                else:
+                    break
 
             betweenStringArgs = betweenString(sliceRange, sampling, max)
 
@@ -73,6 +88,7 @@ def slice(sourceFile, targetFiles, targetSSIMs, sourceRanges, sliceDuration, dim
             if start >= max:
                 executingFlag = False
         elif end > max:
+            file.write("Case 2:\n")
             ffmpegCmdSlow = f"C:/ffmpeg/bin/ffmpeg.exe -y -i {sourceFile} "\
                 "-filter_complex \"select = "\
                 f"'between({sampling}, {start}, {max})', "\
@@ -84,6 +100,7 @@ def slice(sourceFile, targetFiles, targetSSIMs, sourceRanges, sliceDuration, dim
                 f"{sliceIndex}.mp4"
             executingFlag = False
         else:
+            file.write("Case 3:\n")
             ffmpegCmdSlow = f"C:/ffmpeg/bin/ffmpeg.exe -y -i {sourceFile} "\
                 "-filter_complex \"select = "\
                 f"'between({sampling}, {start}, {end})', "\
@@ -96,7 +113,9 @@ def slice(sourceFile, targetFiles, targetSSIMs, sourceRanges, sliceDuration, dim
 
             start = end
         
+        file.write(ffmpegCmdSlow + "\n")
         end = start + length
+        file.close()
         subprocess.call(ffmpegCmdSlow, shell = True)
 
         sliceIndex += 1
@@ -117,6 +136,7 @@ def betweenString(ranges, sampling, max):
 
 
 def match(sourceFile, targetFiles, targetSSIMs, sourceRanges, dimensions):
+    global executingFlag
     sourceCapture = cv2.VideoCapture(sourceFile)
 
     sourceFrameCnt = sourceCapture.get(cv2.CAP_PROP_FRAME_COUNT)
@@ -137,7 +157,7 @@ def match(sourceFile, targetFiles, targetSSIMs, sourceRanges, dimensions):
         targetFrameImgResized = cv2.resize(targetFrameImg, dimensions)
         targetFrameImgResized = cv2.cvtColor(targetFrameImgResized, cv2.COLOR_BGR2GRAY)
 
-        while sourceCapture.isOpened():
+        while sourceCapture.isOpened() and executingFlag:
             # Read the next frame of the sourceCapture
             sourceFlag, sourceFrameImg = sourceCapture.read()
     

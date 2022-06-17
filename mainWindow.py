@@ -31,10 +31,13 @@ class mainWindow(QWidget):
         self.tabWidget.addTab(self.videoSettings, "Settings")
         self.executeBtn = QPushButton("Execute")
         self.executeBtn.clicked.connect(self.startSlice)
+        self.stopBtn = QPushButton("Stop")
+        self.stopBtn.clicked.connect(self.stopSlicing)
 
         self.layout = QGridLayout()
-        self.layout.addWidget(self.tabWidget, 1, 0)
-        self.layout.addWidget(self.executeBtn, 10, 0, 2, 2)
+        self.layout.addWidget(self.tabWidget, 1, 0, 5, 2)
+        self.layout.addWidget(self.executeBtn, 10, 0, 1, 1)
+        self.layout.addWidget(self.stopBtn, 10, 1, 1, 1)
         self.setLayout(self.layout)
         
         self.show()
@@ -42,6 +45,9 @@ class mainWindow(QWidget):
     def startSlice(self):
         """Lock important widgets and create a new worker"""
         self.createSliceWorker()
+
+    def stopSlicing(self):
+        slicer.executingFlag = False
 
     def createSliceWorker(self):
         """Get all of the information the user inputted"""
