@@ -5,6 +5,7 @@ from PyQt6.QtCore import Qt, QObject, QThread, pyqtSignal, pyqtSlot
 
 from captureEditor import captureEditor
 from videoSettings import videoSettings
+from outputSettings import outputSettings
 import sliceFunction as slicer
 
 app = QApplication(sys.argv)
@@ -24,11 +25,13 @@ class mainWindow(QWidget):
 
         self.captureEditor = captureEditor()
         self.videoSettings = videoSettings()
+        self.outputSettings = outputSettings()
         self.captureEditor.sourceInput.textChanged.connect(self.videoSettings.setAspectRatio)
 
         self.tabWidget = QTabWidget()
-        self.tabWidget.addTab(self.captureEditor, "Videos")
-        self.tabWidget.addTab(self.videoSettings, "Settings")
+        self.tabWidget.addTab(self.captureEditor, "Input settings")
+        self.tabWidget.addTab(self.videoSettings, "Slice settings")
+        self.tabWidget.addTab(self.outputSettings, "Output settings")
         self.executeBtn = QPushButton("Execute")
         self.executeBtn.clicked.connect(self.startSlice)
         self.stopBtn = QPushButton("Stop")
