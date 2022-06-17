@@ -5,6 +5,8 @@ import cv2
 
 from videoChecker import videoValidity
 
+MINIMUM_DIMENSIONS = "24"
+
 class videoSettings(QWidget):
     def __init__(self):
         super().__init__()
@@ -22,17 +24,19 @@ class videoSettings(QWidget):
     def initUI(self):
         self.layout = QGridLayout()
 
-        self.thresholdLabel = QLabel("Similarity threshold:")
+        self.thresholdLabel = QLabel("Similarity threshold (0.0-100.0):")
         self.thresholdEdit = QLineEdit()
-        self.thresholdEdit.setPlaceholderText("0.00 - 100.00")
+        self.thresholdEdit.setPlaceholderText("95.0")
         self.thresholdEdit.setValidator(QDoubleValidator())
+        self.thresholdEdit.editingFinished.connect(lambda: self.thresholdSlider.setValue(float(self.thresholdEdit.text())))
         self.thresholdSlider = QSlider(Qt.Orientation.Horizontal)
         self.thresholdSlider.setMinimum(0.00)
         self.thresholdSlider.setMaximum(100.00)
 
-        self.sliceDurationLabel = QLabel("Slice duration:")
+        self.sliceDurationLabel = QLabel("Slice duration (seconds):")
         self.sliceDurationEdit = QLineEdit()
-        self.sliceDurationEdit.setPlaceholderText("seconds")
+        self.sliceDurationEdit.setValidator(QDoubleValidator())
+        self.sliceDurationEdit.setPlaceholderText("60.0")
 
         self.compareLabel = QLabel("Comparison dimensions:")
         self.compareWidth = QLineEdit("1920")
@@ -67,14 +71,19 @@ class videoSettings(QWidget):
                 self.capHeight = temp.get(cv2.CAP_PROP_FRAME_HEIGHT)
             temp.release()
 
+    @pyqtSlot()
     def updateWidth(self):
+        # Check if there's a capture selected by probing the dimension attributes
         if self.capHeight and self.capWidth:
-            if self.compareHeight.text():
-                ratio = self.capWidth / self.capHeight
-                self.compareWidth.setText(str(int(ratio * int(self.compareHeight.text()))))
+            if not self.compareHeight.text():
+                self.compareHeight.setText(MINIMUM_DIMENSIONS)
+            ratio = self.capWidth / self.capHeight
+            self.compareWidth.setText(str(int(ratio * int(self.compareHeight.text()))))
 
+    @pyqtSlot()
     def updateHeight(self):
         if self.capHeight and self.capWidth:
-            if self.compareWidth.text():
-                ratio = self.capHeight / self.capWidth
-                self.compareHeight.setText(str(int(ratio * int(self.compareWidth.text()))))
+            if not self.compareWidth.text():
+                self.compareWidth.setText(MINIMUM_DIMENSIONS)
+            ratio = self.capHeight / self.capWidth
+            self.compareHeight.setText(str(int(ratio * int(self.compareWidth.text()))))

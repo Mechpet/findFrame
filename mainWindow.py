@@ -63,8 +63,12 @@ class mainWindow(QWidget):
             targetFiles.append(self.captureEditor.targetList.layout.itemAt(i).widget().fileEdit.text())
             targetSSIMs.append(slicer.DEFAULT_SSIM)
             sourceRanges.append(self.captureEditor.targetList.layout.itemAt(i).widget().bounds.value())
+        if self.videoSettings.sliceDurationEdit.text():
+            sliceDuration = float(self.videoSettings.sliceDurationEdit.text())
+        else:
+            sliceDuration = slicer.DEFAULT_SLICE_LENGTH
 
-        self.worker = sliceWorker(sourceFile, targetFiles, targetSSIMs, sourceRanges, slicer.DEFAULT_SLICE_LENGTH, dimensions)
+        self.worker = sliceWorker(sourceFile, targetFiles, targetSSIMs, sourceRanges, sliceDuration, dimensions)
         self.worker.moveToThread(self.thread)
         self.thread.start()
         self.worker.ready.emit()
