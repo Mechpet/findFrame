@@ -19,7 +19,7 @@ class captureAttributes:
         self.frameCnt = capture.get(cv2.CAP_PROP_FRAME_COUNT)
         self.FPS = capture.get(cv2.CAP_PROP_FPS)
 
-def slice(sourceFile, targetFiles, targetSSIMs, sourceRanges, sliceDuration, dimensions):
+def slice(sourceFile, targetFiles, targetSSIMs, sourceRanges, sliceDuration, dimensions, directory = "", name = "", prefix = False):
     global executingFlag
     matchingFrames = match(sourceFile, targetFiles, targetSSIMs, sourceRanges, dimensions)
     print(matchingFrames)
@@ -30,16 +30,6 @@ def slice(sourceFile, targetFiles, targetSSIMs, sourceRanges, sliceDuration, dim
     # Convert the targetMatches to seconds
     targetMatches = [(targetMatches[i][0] / targetsProps[i].FPS, targetMatches[i][1] / targetsProps[i].FPS) for i in range(len(targetMatches))]
 
-    # match = [(start, end), (start, end), ...]
-    # Get the list of the matches from above -> Sorted (lower the index, the lower the starting frame index)
-    # Start slicing the source capture
-    # While the lowest match is IN the slice (start, end):
-    #   Trim it out and work around it 
-    #   Calculate the new slice (start, end)
-    #   Look at the next lowest match from now on
-    # Matched the exact number of frames in the target sequence
-    # The target sequence has finished reading through
-    # Safe to trim the video out:
     sampling = 't'
     sliceIndex = 1
     targetIndex = 0
@@ -82,7 +72,7 @@ def slice(sourceFile, targetFiles, targetSSIMs, sourceRanges, sliceDuration, dim
                 f"'{betweenStringArgs}', "\
                 "asetpts = N/SR/TB\" "\
                 "-map 0 "\
-                f"{sliceIndex}.mp4"
+                f"{getFileName(directory, name, prefix, sliceIndex)}"
 
             start = sliceRange[-1][1]
             if start >= max:
@@ -97,7 +87,7 @@ def slice(sourceFile, targetFiles, targetSSIMs, sourceRanges, sliceDuration, dim
                 f"'between({sampling}, {start}, {max})', "\
                 "asetpts = N/SR/TB\" "\
                 "-map 0 "\
-                f"{sliceIndex}.mp4"
+                f"{getFileName(directory, name, prefix, sliceIndex)}"
             executingFlag = False
         else:
             file.write("Case 3:\n")
@@ -109,7 +99,7 @@ def slice(sourceFile, targetFiles, targetSSIMs, sourceRanges, sliceDuration, dim
                 f"'between({sampling}, {start}, {end})', "\
                 "asetpts = N/SR/TB\" "\
                 "-map 0 "\
-                f"{sliceIndex}.mp4"
+                f"{getFileName(directory, name, prefix, sliceIndex)}"
 
             start = end
         
@@ -195,3 +185,10 @@ def match(sourceFile, targetFiles, targetSSIMs, sourceRanges, dimensions):
                 break
 
     return matchStarts
+
+def getFileName(directory, name, prefix, index):
+    """Get the file name given the template, index, and whether the index is the prefix or suffix"""
+    if prefix:
+        return f"{directory}{index}{name}.mp4"
+    else:
+        return f"{directory}{name}{index}.mp4"

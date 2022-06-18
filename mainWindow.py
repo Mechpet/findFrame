@@ -52,6 +52,7 @@ class mainWindow(QWidget):
 
     @pyqtSlot()
     def stopSlicing(self):
+        """Stop the slicing operation of the current worker"""
         slicer.executingFlag = False
 
     def createSliceWorker(self):
@@ -65,24 +66,30 @@ class mainWindow(QWidget):
             targetFiles.append(self.captureEditor.targetList.layout.itemAt(i).widget().fileEdit.text())
             targetSSIMs.append(slicer.DEFAULT_SSIM)
             sourceRanges.append(self.captureEditor.targetList.layout.itemAt(i).widget().bounds.value())
+
         if self.videoSettings.sliceDurationEdit.text():
             sliceDuration = float(self.videoSettings.sliceDurationEdit.text())
         else:
             sliceDuration = slicer.DEFAULT_SLICE_LENGTH
 
-        self.worker = sliceWorker(sourceFile, targetFiles, targetSSIMs, sourceRanges, sliceDuration, dimensions)
+        directory = self.outputSettings.getOutputDirectory()
+        template = self.outputSettings.outputTemplate.text()
+        prefix = self.outputSettings.appendBtns.checkedId()
+
+        self.worker = sliceWorker(sourceFile, targetFiles, targetSSIMs, sourceRanges, sliceDuration, dimensions, directory, template, prefix)
         self.worker.moveToThread(self.thread)
         self.thread.start()
         self.worker.ready.emit()
 
     def closeEvent(self, event):
+        """Quit all running threads and exit the app"""
         self.thread.quit()
         self.worker = None
         event.accept()
 
 class sliceWorker(QObject):
     ready = pyqtSignal()
-    def __init__(self, sourceFile, targetFiles, targetSSIMs, sourceRanges, sliceDuration, dimensions):
+    def __init__(self, sourceFile, targetFiles, targetSSIMs, sourceRanges, sliceDuration, dimensions, directory, template, prefix):
         super().__init__()
         self.sourceFile = sourceFile
         self.targetFiles = targetFiles
@@ -90,12 +97,16 @@ class sliceWorker(QObject):
         self.sourceRanges = sourceRanges
         self.sliceDuration = sliceDuration
         self.dimensions = dimensions
+        self.directory = directory
+        self.template = template
+        self.prefix = prefix
         self.ready.connect(self.run)
 
     @pyqtSlot()
     def run(self):
+        """Start the slicing operation"""
         slicer.executingFlag = True
-        slicer.slice(self.sourceFile, self.targetFiles, self.targetSSIMs, self.sourceRanges, self.sliceDuration, self.dimensions)
+        slicer.slice(self.sourceFile, self.targetFiles, self.targetSSIMs, self.sourceRanges, self.sliceDuration, self.dimensions, self.directory, self.template, self.prefix)
 
 def main():
     slicer.executingFlag = False
