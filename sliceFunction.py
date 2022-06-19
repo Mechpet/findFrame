@@ -57,10 +57,11 @@ class sliceWorker(QObject):
             targetFlag, targetFrameImg = targetCapture.read()
             targetFrameImgResized = cv2.resize(targetFrameImg, dimensions)
             targetFrameImgResized = cv2.cvtColor(targetFrameImgResized, cv2.COLOR_BGR2GRAY)
+            targetFrameCnt = targetCapture.get(cv2.CAP_PROP_FRAME_COUNT)
+            targetFrameIndex = targetCapture.get(cv2.CAP_PROP_POS_FRAMES)
 
             while sourceCapture.isOpened() and config.executingFlag:
                 # Read the next frame of the sourceCapture
-                self.progressChanged.emit((sourceFrameIndex - sourceRange[0]) / sourceRange[1] * 100)
                 sourceFlag, sourceFrameImg = sourceCapture.read()
     
                 if sourceFlag:
@@ -74,18 +75,27 @@ class sliceWorker(QObject):
                     if ssimFloat >= targetSSIMs[i]:
                         if matchStarts[i] < 0:
                             matchStarts[i] = sourceFrameIndex
+                        print("(matchStarts[i] - sourceRange[0]) / sourceRange[1] = ", (matchStarts[i] - sourceRange[0]) / sourceRange[1])
+                        print("(1 - (matchStarts[i] - sourceRange[0]) / sourceRange[1]) = ", (1 - (matchStarts[i] - sourceRange[0]) / sourceRange[1]))
+                        print("(targetFrameIndex - matchStarts[i]) = ", (targetFrameIndex - matchStarts[i]))
+                        self.progressChanged.emit(((matchStarts[i] - sourceRange[0]) / sourceRange[1] + (1 - (matchStarts[i] - sourceRange[0]) / sourceRange[1]) / targetFrameCnt * targetFrameIndex) * 100)
 
                         # Read the next frame of the targetCapture
                         targetFlag, targetFrameImg = targetCapture.read()
                         if targetFlag:
                             targetFrameImg = cv2.cvtColor(targetFrameImg, cv2.COLOR_BGR2GRAY)
                             targetFrameImgResized = cv2.resize(targetFrameImg, dimensions)
+                            targetFrameIndex = targetCapture.get(cv2.CAP_PROP_POS_FRAMES)
                         else:
                             break
                     elif matchStarts[i]:
                         targetCapture.set(cv2.CAP_PROP_POS_FRAMES, 0)
                         targetFlag, targetFrameImg = targetCapture.read()
+                        targetFrameIndex = targetCapture.get(cv2.CAP_PROP_POS_FRAMES)
                         matchStarts[i] = -1
+                        self.progressChanged.emit((sourceFrameIndex - sourceRange[0]) / sourceRange[1] * 100)
+                    else:
+                        self.progressChanged.emit((sourceFrameIndex - sourceRange[0]) / sourceRange[1] * 100)
             
                     sourceFrameIndex = sourceCapture.get(cv2.CAP_PROP_POS_FRAMES)
                 # Something failed while trying to read the next frame - safe to end the search
