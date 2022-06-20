@@ -36,6 +36,8 @@ class mainWindow(QWidget):
         self.tabWidget.addTab(self.videoSettings, "Slice settings")
         self.tabWidget.addTab(self.outputSettings, "Output settings")
         self.tabWidget.addTab(self.progress, "Progress")
+        self.tabWidget.currentChanged.connect(self.updateConfig)
+
         self.executeBtn = QPushButton("Execute")
         self.executeBtn.clicked.connect(self.startSlice)
         self.stopBtn = QPushButton("Stop")
@@ -81,7 +83,9 @@ class mainWindow(QWidget):
         prefix = self.outputSettings.appendBtns.checkedId()
 
         self.worker = sliceWorker(sourceFile, targetFiles, targetSSIMs, sourceRanges, sliceDuration, dimensions, directory, template, prefix)
-        self.worker.progressChanged.connect(self.progress.updateValue)
+        self.worker.progressChanged.connect(self.progress.match.updateValue)
+        self.worker.sourceImageChanged.connect(self.progress.match.setSource)
+        self.worker.targetImageChanged.connect(self.progress.match.setTarget)
         self.worker.moveToThread(self.thread)
         self.thread.start()
         self.worker.ready.emit()
@@ -91,6 +95,13 @@ class mainWindow(QWidget):
         self.thread.quit()
         self.worker = None
         event.accept()
+
+    @pyqtSlot(int)
+    def updateConfig(self, newIndex):
+        if newIndex == 3:
+            config.onPreview = True
+        else:
+            config.onPreview = False
 
 def main():
     global executingFlag
