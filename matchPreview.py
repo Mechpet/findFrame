@@ -1,5 +1,5 @@
-from PyQt6.QtWidgets import QWidget, QLabel, QProgressBar, QGridLayout
-from PyQt6.QtCore import pyqtSlot
+from PyQt6.QtWidgets import QWidget, QLabel, QProgressBar, QGridLayout, QSizePolicy
+from PyQt6.QtCore import Qt, pyqtSlot
 from PyQt6.QtGui import QImage, QPixmap
 
 class matchPreview(QWidget):
@@ -37,8 +37,10 @@ class matchPreview(QWidget):
     def setSource(self, image):
         print("UPDATE SOURCE")
         self.sourceImage.setPixmap(QPixmap.fromImage(image))
+        print("DONE")
 
     @pyqtSlot(QImage)
     def setTarget(self, image):
         print("UPDATE TARGET")
         self.targetImage.setPixmap(QPixmap.fromImage(image))
+        print("DONE")

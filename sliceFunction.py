@@ -56,16 +56,23 @@ class sliceWorker(QObject):
 
             # Get the first frame of the target capture
             targetFlag, targetFrameImg = targetCapture.read()
+            print("RESIZING")
             targetFrameImgResized = cv2.resize(targetFrameImg, dimensions)
+            print("RESIZING DONE")
             targetFrameImgResized = cv2.cvtColor(targetFrameImgResized, cv2.COLOR_BGR2GRAY)
+            print("GREYSCALE DONE")
             targetFrameCnt = targetCapture.get(cv2.CAP_PROP_FRAME_COUNT)
             targetFrameIndex = targetCapture.get(cv2.CAP_PROP_POS_FRAMES)
 
             # Display the image 
             h, w = targetFrameImgResized.shape
-            convertToQtFormat = QImage(targetFrameImgResized.data, w, h, QImage.Format.Format_Grayscale16)
-            p = convertToQtFormat.scaled(320, 240, Qt.KeepAspectRatio)
+            print("CONVERTING T")
+            p = QImage(targetFrameImgResized.data, w, h, QImage.Format.Format_Grayscale8)
+            print("CONVERTED T")
+            p = p.scaled(320, 240)
+            print("SCALED T")
             self.targetImageChanged.emit(p)
+            print("EMITTED T")
 
             while sourceCapture.isOpened() and config.executingFlag:
                 # Read the next frame of the sourceCapture
@@ -77,9 +84,13 @@ class sliceWorker(QObject):
                     
                     if config.onPreview:
                         h, w = sourceFrameImgResized.shape
-                        convertToQtFormat = QImage(sourceFrameImgResized.data, w, h, QImage.Format.Format_Grayscale16)
-                        p = convertToQtFormat.scaled(320, 240, Qt.KeepAspectRatio)
+                        print("CONVERTING")
+                        p = QImage(sourceFrameImgResized.data, w, h, QImage.Format.Format_Grayscale8)
+                        print("CONVERTED")
+                        p = p.scaled(320, 240)
+                        print("SCALED")
                         self.sourceImageChanged.emit(p)
+                        print("EMITTED")
 
                     # Calculate the Structural Similarity Index between the two grayscale images
                     ssimFloat = ssim(sourceFrameImgResized, targetFrameImgResized)
@@ -101,8 +112,8 @@ class sliceWorker(QObject):
                             targetFrameIndex = targetCapture.get(cv2.CAP_PROP_POS_FRAMES)
                             if config.onPreview:
                                 h, w = targetFrameImgResized.shape
-                                convertToQtFormat = QImage(targetFrameImgResized.data, w, h, QImage.Format.Format_Grayscale16)
-                                p = convertToQtFormat.scaled(320, 240, Qt.KeepAspectRatio)
+                                p = QImage(targetFrameImgResized.data, w, h, QImage.Format.Format_Grayscale8)
+                                p = p.scaled(320, 240)
                                 self.targetImageChanged.emit(p)
                         else:
                             break
