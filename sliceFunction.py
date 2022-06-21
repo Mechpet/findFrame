@@ -18,6 +18,8 @@ DEFAULT_SLICE_LENGTH = 60
 
 class sliceWorker(QObject):
     ready = pyqtSignal()
+    slicing = pyqtSignal()
+    finished = pyqtSignal()
     sourceImageChanged = pyqtSignal(QImage)
     targetImageChanged = pyqtSignal(QImage)
     progressChanged = pyqtSignal(float)
@@ -56,23 +58,16 @@ class sliceWorker(QObject):
 
             # Get the first frame of the target capture
             targetFlag, targetFrameImg = targetCapture.read()
-            print("RESIZING")
             targetFrameImgResized = cv2.resize(targetFrameImg, dimensions)
-            print("RESIZING DONE")
             targetFrameImgResized = cv2.cvtColor(targetFrameImgResized, cv2.COLOR_BGR2GRAY)
-            print("GREYSCALE DONE")
             targetFrameCnt = targetCapture.get(cv2.CAP_PROP_FRAME_COUNT)
             targetFrameIndex = targetCapture.get(cv2.CAP_PROP_POS_FRAMES)
 
             # Display the image 
             h, w = targetFrameImgResized.shape
-            print("CONVERTING T")
             p = QImage(targetFrameImgResized.data, w, h, QImage.Format.Format_Grayscale8)
-            print("CONVERTED T")
             p = p.scaled(320, 240)
-            print("SCALED T")
             self.targetImageChanged.emit(p)
-            print("EMITTED T")
 
             while sourceCapture.isOpened() and config.executingFlag:
                 # Read the next frame of the sourceCapture
@@ -84,13 +79,9 @@ class sliceWorker(QObject):
                     
                     if config.onPreview:
                         h, w = sourceFrameImgResized.shape
-                        print("CONVERTING")
                         p = QImage(sourceFrameImgResized.data, w, h, QImage.Format.Format_Grayscale8)
-                        print("CONVERTED")
                         p = p.scaled(320, 240)
-                        print("SCALED")
                         self.sourceImageChanged.emit(p)
-                        print("EMITTED")
 
                     # Calculate the Structural Similarity Index between the two grayscale images
                     ssimFloat = ssim(sourceFrameImgResized, targetFrameImgResized)
@@ -99,9 +90,6 @@ class sliceWorker(QObject):
                     if ssimFloat >= targetSSIMs[i]:
                         if matchStarts[i] < 0:
                             matchStarts[i] = sourceFrameIndex
-                        print("(matchStarts[i] - sourceRange[0]) / sourceRange[1] = ", (matchStarts[i] - sourceRange[0]) / sourceRange[1])
-                        print("(1 - (matchStarts[i] - sourceRange[0]) / sourceRange[1]) = ", (1 - (matchStarts[i] - sourceRange[0]) / sourceRange[1]))
-                        print("(targetFrameIndex - matchStarts[i]) = ", (targetFrameIndex - matchStarts[i]))
                         self.progressChanged.emit(((matchStarts[i] - sourceRange[0]) / sourceRange[1] + (1 - (matchStarts[i] - sourceRange[0]) / sourceRange[1]) / targetFrameCnt * targetFrameIndex) * 100)
 
                         # Read the next frame of the targetCapture
@@ -139,7 +127,6 @@ class sliceWorker(QObject):
 
     def slice(self, sourceFile, targetFiles, targetSSIMs, sourceRanges, sliceDuration, dimensions, directory = "", name = "", prefix = False):
         matchingFrames = self.match(sourceFile, targetFiles, targetSSIMs, sourceRanges, dimensions)
-        print(matchingFrames)
 
         sourceProps = captureAttributes(sourceFile)
         targetsProps = [captureAttributes(targetFile) for targetFile in targetFiles]
@@ -163,6 +150,8 @@ class sliceWorker(QObject):
 
         matchStart = targetMatches[targetIndex][0]
         matchEnd = targetMatches[targetIndex][1]
+
+        self.slicing.emit()
         while config.executingFlag:
             file = open("log.txt", "a")
             if matchStart >= start and matchStart <= end:
@@ -227,7 +216,7 @@ class sliceWorker(QObject):
 
             sliceIndex += 1
     
-        print('Finished')
+        self.finished.emit()
 
 class captureAttributes:
     def __init__(self, fileName):

@@ -10,7 +10,7 @@ class matchPreview(QWidget):
 
     def initUI(self):
         layout = QGridLayout()
-        self.status = QLabel("Matching video captures...")
+        self.status = QLabel("IDLE.")
         self.sourceImage = QLabel("")
         self.sourceImage.resize(320, 240)
         self.targetImage = QLabel("")
@@ -26,7 +26,6 @@ class matchPreview(QWidget):
 
     @pyqtSlot(float)
     def updateValue(self, value):
-        print("UPDATE VALUE")
         self.progress.setValue(value)
 
     @pyqtSlot(str)
@@ -35,12 +34,8 @@ class matchPreview(QWidget):
 
     @pyqtSlot(QImage)
     def setSource(self, image):
-        print("UPDATE SOURCE")
         self.sourceImage.setPixmap(QPixmap.fromImage(image))
-        print("DONE")
 
     @pyqtSlot(QImage)
     def setTarget(self, image):
-        print("UPDATE TARGET")
         self.targetImage.setPixmap(QPixmap.fromImage(image))
-        print("DONE")

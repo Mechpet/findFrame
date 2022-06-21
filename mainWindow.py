@@ -9,6 +9,7 @@ from outputSettings import outputSettings
 from progressPreview import progressPreview
 from sliceFunction import sliceWorker, DEFAULT_SLICE_LENGTH, DEFAULT_SSIM
 import config
+import os
 
 app = QApplication(sys.argv)
 
@@ -39,7 +40,7 @@ class mainWindow(QWidget):
         self.tabWidget.currentChanged.connect(self.updateConfig)
 
         self.executeBtn = QPushButton("Execute")
-        self.executeBtn.clicked.connect(self.startSlice)
+        self.executeBtn.clicked.connect(self.startSliceWorker)
         self.stopBtn = QPushButton("Stop")
         self.stopBtn.clicked.connect(self.stopSlicing)
 
@@ -52,7 +53,7 @@ class mainWindow(QWidget):
         self.show()
 
     @pyqtSlot()
-    def startSlice(self):
+    def startSliceWorker(self):
         """Lock important widgets and create a new worker"""
         self.createSliceWorker()
 
@@ -60,6 +61,7 @@ class mainWindow(QWidget):
     def stopSlicing(self):
         """Stop the slicing operation of the current worker"""
         config.executingFlag = False
+        os.system("taskkill /f /im ffmpeg.exe")
 
     def createSliceWorker(self):
         """Get all of the information the user inputted"""
@@ -83,6 +85,8 @@ class mainWindow(QWidget):
         prefix = self.outputSettings.appendBtns.checkedId()
 
         self.worker = sliceWorker(sourceFile, targetFiles, targetSSIMs, sourceRanges, sliceDuration, dimensions, directory, template, prefix)
+        self.worker.slicing.connect(self.startSlicing)
+        self.worker.finished.connect(self.finishedSlicing)
         self.worker.progressChanged.connect(self.progress.match.updateValue)
         self.worker.sourceImageChanged.connect(self.progress.match.setSource)
         self.worker.targetImageChanged.connect(self.progress.match.setTarget)
@@ -90,11 +94,25 @@ class mainWindow(QWidget):
         self.thread.start()
         self.worker.ready.emit()
 
+        self.progress.match.updateStatus("MATCHING VIDEOS.")
+
     def closeEvent(self, event):
         """Quit all running threads and exit the app"""
+        self.closeThread()
+        event.accept()
+
+    def closeThread(self):
         self.thread.quit()
         self.worker = None
-        event.accept()
+
+    @pyqtSlot()
+    def startSlicing(self):
+        self.progress.match.updateStatus("SLICING VIDEOS.")
+
+    @pyqtSlot()
+    def finishedSlicing(self):
+        self.closeThread()
+        self.progress.match.updateStatus("IDLE.")
 
     @pyqtSlot(int)
     def updateConfig(self, newIndex):

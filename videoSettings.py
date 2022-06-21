@@ -76,7 +76,7 @@ class videoSettings(QWidget):
     def updateWidth(self):
         # Check if there's a capture selected by probing the dimension attributes
         if self.capHeight and self.capWidth:
-            if not self.compareHeight.text() or self.compareHeight.text() < MINIMUM_DIMENSIONS:
+            if not self.compareHeight.text() or float(self.compareHeight.text()) < float(MINIMUM_DIMENSIONS):
                 self.compareHeight.setText(MINIMUM_DIMENSIONS)
             ratio = self.capWidth / self.capHeight
             self.compareWidth.setText(str(int(ratio * int(self.compareHeight.text()))))
@@ -84,13 +84,13 @@ class videoSettings(QWidget):
     @pyqtSlot()
     def updateHeight(self):
         if self.capHeight and self.capWidth:
-            if not self.compareWidth.text() or self.compareWidth.text() < MINIMUM_DIMENSIONS:
+            if not self.compareWidth.text() or float(self.compareWidth.text()) < float(MINIMUM_DIMENSIONS):
                 self.compareWidth.setText(MINIMUM_DIMENSIONS)
             ratio = self.capHeight / self.capWidth
             self.compareHeight.setText(str(int(ratio * int(self.compareWidth.text()))))
 
     @pyqtSlot()
     def updateThresholdEdit(self):
-        if not self.thresholdEdit.text() or self.thresholdEdit.text() < MINIMUM_THRESHOLD:
+        if not self.thresholdEdit.text() or float(self.thresholdEdit.text()) < float(MINIMUM_THRESHOLD):
             self.thresholdEdit.setText(MINIMUM_THRESHOLD)
         self.thresholdSlider.setValue(float(self.thresholdEdit.text()))
