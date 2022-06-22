@@ -42,10 +42,17 @@ class target(QWidget):
         self.fileEdit.setFixedWidth(200)
         self.fileBrowse = QPushButton("Browse")
         self.validation = QLabel("Invalid video")
+        print('INIT')
         self.bounds = QLabeledRangeSlider(Qt.Orientation.Horizontal)
+        print('INITED')
         self.bounds.setFixedWidth(200)
-        self.bounds.setMaximum(100)
+        print('SETTED W')
+        self.bounds.setMinimum(0)
+        print('SETTED MIN')
+        #self.bounds.setMaximum(100)
+        print('SETTED MAX')
         self.bounds.setValue((0, 100))
+        print('SETTED V')
 
         self.fileBrowse.clicked.connect(self.openFileDialog)
 

@@ -20,10 +20,11 @@ class sliceWorker(QObject):
     ready = pyqtSignal()
     slicing = pyqtSignal()
     finished = pyqtSignal()
+    matched = pyqtSignal()
     sourceImageChanged = pyqtSignal(QImage)
     targetImageChanged = pyqtSignal(QImage)
     progressChanged = pyqtSignal(float)
-    def __init__(self, sourceFile, targetFiles, targetSSIMs, sourceRanges, sliceDuration, dimensions, directory, template, prefix):
+    def __init__(self, sourceFile, targetFiles, targetSSIMs, sourceRanges, sliceDuration, dimensions, directory, template, prefix, slowOn):
         super().__init__()
         self.sourceFile = sourceFile
         self.targetFiles = targetFiles
@@ -34,15 +35,16 @@ class sliceWorker(QObject):
         self.directory = directory
         self.template = template
         self.prefix = prefix
+        self.slowOn = slowOn
         self.ready.connect(self.run)
 
     @pyqtSlot()
     def run(self):
         """Start the slicing operation"""
         config.executingFlag = True
-        self.slice(self.sourceFile, self.targetFiles, self.targetSSIMs, self.sourceRanges, self.sliceDuration, self.dimensions, self.directory, self.template, self.prefix)
+        self.slice(self.sourceFile, self.targetFiles, self.targetSSIMs, self.sourceRanges, self.sliceDuration, self.dimensions, self.directory, self.template, self.prefix, self.slowOn)
     
-    def match(self, sourceFile, targetFiles, targetSSIMs, sourceRanges, dimensions):
+    def match(self, sourceFile, targetFiles, targetSSIMs, sourceRanges, dimensions, slowOn):
         sourceCapture = cv2.VideoCapture(sourceFile)
 
         sourceFrameCnt = sourceCapture.get(cv2.CAP_PROP_FRAME_COUNT)
@@ -91,7 +93,7 @@ class sliceWorker(QObject):
                         if matchStarts[i] < 0:
                             matchStarts[i] = sourceFrameIndex
                         self.progressChanged.emit(((matchStarts[i] - sourceRange[0]) / sourceRange[1] + (1 - (matchStarts[i] - sourceRange[0]) / sourceRange[1]) / targetFrameCnt * targetFrameIndex) * 100)
-
+                        self.matched.emit()
                         # Read the next frame of the targetCapture
                         targetFlag, targetFrameImg = targetCapture.read()
                         if targetFlag:
@@ -106,8 +108,12 @@ class sliceWorker(QObject):
                         else:
                             break
                     elif matchStarts[i]:
+                        print("BROKE")
                         targetCapture.set(cv2.CAP_PROP_POS_FRAMES, 0)
                         targetFlag, targetFrameImg = targetCapture.read()
+                        targetFrameIndex = targetCapture.get(cv2.CAP_PROP_POS_FRAMES)
+                        targetFrameImgResized = cv2.resize(targetFrameImg, dimensions)
+                        targetFrameImgResized = cv2.cvtColor(targetFrameImgResized, cv2.COLOR_BGR2GRAY)
                         targetFrameIndex = targetCapture.get(cv2.CAP_PROP_POS_FRAMES)
                         matchStarts[i] = -1
                         self.progressChanged.emit((sourceFrameIndex - sourceRange[0]) / sourceRange[1] * 100)
@@ -123,10 +129,13 @@ class sliceWorker(QObject):
                 if sourceFrameIndex == sourceRange[1] and matchStarts[i] == -1:
                     break
 
+                if slowOn:
+                    cv2.waitKey(slowOn)
+
         return matchStarts
 
-    def slice(self, sourceFile, targetFiles, targetSSIMs, sourceRanges, sliceDuration, dimensions, directory = "", name = "", prefix = False):
-        matchingFrames = self.match(sourceFile, targetFiles, targetSSIMs, sourceRanges, dimensions)
+    def slice(self, sourceFile, targetFiles, targetSSIMs, sourceRanges, sliceDuration, dimensions, directory = "", name = "", prefix = False, slowOn = False):
+        matchingFrames = self.match(sourceFile, targetFiles, targetSSIMs, sourceRanges, dimensions, slowOn)
 
         sourceProps = captureAttributes(sourceFile)
         targetsProps = [captureAttributes(targetFile) for targetFile in targetFiles]

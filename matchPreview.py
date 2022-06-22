@@ -26,7 +26,7 @@ class matchPreview(QWidget):
 
     @pyqtSlot(float)
     def updateValue(self, value):
-        self.progress.setValue(value)
+        self.progress.setValue(int(value))
 
     @pyqtSlot(str)
     def updateStatus(self, newStatus):

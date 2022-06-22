@@ -2,6 +2,7 @@ import sys
 
 from PyQt6.QtWidgets import QApplication, QWidget, QGridLayout, QPushButton, QTabWidget
 from PyQt6.QtCore import Qt, QObject, QThread, pyqtSignal, pyqtSlot
+from cv2 import threshold
 
 from captureEditor import captureEditor
 from videoSettings import videoSettings
@@ -70,9 +71,14 @@ class mainWindow(QWidget):
         targetSSIMs = []
         sourceRanges = []
         dimensions = (int(self.videoSettings.compareWidth.text()), int(self.videoSettings.compareHeight.text()))
+        thresholdSSIM = self.videoSettings.thresholdEdit.text()
+        if thresholdSSIM:
+            targetSSIM = float(thresholdSSIM)
+        else:
+            targetSSIM = DEFAULT_SSIM
         for i in range(self.captureEditor.targetList.layout.count() - 1):
             targetFiles.append(self.captureEditor.targetList.layout.itemAt(i).widget().fileEdit.text())
-            targetSSIMs.append(DEFAULT_SSIM)
+            targetSSIMs.append(targetSSIM)
             sourceRanges.append(self.captureEditor.targetList.layout.itemAt(i).widget().bounds.value())
 
         if self.videoSettings.sliceDurationEdit.text():
@@ -83,8 +89,11 @@ class mainWindow(QWidget):
         directory = self.outputSettings.getOutputDirectory()
         template = self.outputSettings.outputTemplate.text()
         prefix = self.outputSettings.appendBtns.checkedId()
+        slowEnabled = self.videoSettings.slowModeEdit.text()
+        if slowEnabled:
+            slowEnabled = int(slowEnabled)
 
-        self.worker = sliceWorker(sourceFile, targetFiles, targetSSIMs, sourceRanges, sliceDuration, dimensions, directory, template, prefix)
+        self.worker = sliceWorker(sourceFile, targetFiles, targetSSIMs, sourceRanges, sliceDuration, dimensions, directory, template, prefix, slowEnabled)
         self.worker.slicing.connect(self.startSlicing)
         self.worker.finished.connect(self.finishedSlicing)
         self.worker.progressChanged.connect(self.progress.match.updateValue)

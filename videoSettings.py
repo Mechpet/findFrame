@@ -1,4 +1,4 @@
-from PyQt6.QtWidgets import QWidget, QSlider, QLineEdit, QGridLayout, QLabel
+from PyQt6.QtWidgets import QWidget, QSlider, QLineEdit, QGridLayout, QLabel, QCheckBox
 from PyQt6.QtCore import Qt, pyqtSlot
 from PyQt6.QtGui import QDoubleValidator
 import cv2
@@ -25,14 +25,14 @@ class videoSettings(QWidget):
     def initUI(self):
         self.layout = QGridLayout()
 
-        self.thresholdLabel = QLabel("Similarity threshold (0.0-100.0):")
+        self.thresholdLabel = QLabel("Similarity threshold (0-100):")
         self.thresholdEdit = QLineEdit()
-        self.thresholdEdit.setPlaceholderText("95.0")
+        self.thresholdEdit.setPlaceholderText("95")
         self.thresholdEdit.setValidator(QDoubleValidator())
         self.thresholdEdit.editingFinished.connect(self.updateThresholdEdit)
         self.thresholdSlider = QSlider(Qt.Orientation.Horizontal)
-        self.thresholdSlider.setMinimum(0.00)
-        self.thresholdSlider.setMaximum(100.00)
+        self.thresholdSlider.setMinimum(0)
+        self.thresholdSlider.setMaximum(100)
 
         self.sliceDurationLabel = QLabel("Slice duration (seconds):")
         self.sliceDurationEdit = QLineEdit()
@@ -48,6 +48,10 @@ class videoSettings(QWidget):
         self.compareWidth.editingFinished.connect(self.updateHeight)
         self.compareHeight.editingFinished.connect(self.updateWidth)
 
+        self.slowMode = QLabel("Slow mode delay:")
+        self.slowModeEdit = QLineEdit("")
+        self.slowModeEdit.setValidator(QDoubleValidator())
+
         self.thresholdSlider.valueChanged.connect(lambda: self.thresholdEdit.setText(str(self.thresholdSlider.value())))
 
         self.layout.addWidget(self.thresholdLabel, 0, 0, 1, 1)
@@ -58,6 +62,8 @@ class videoSettings(QWidget):
         self.layout.addWidget(self.compareLabel, 2, 0, 2, 1, Qt.AlignmentFlag.AlignVCenter)
         self.layout.addWidget(self.compareWidth, 2, 1, 1, 1)
         self.layout.addWidget(self.compareHeight, 3, 1, 1, 1)
+        self.layout.addWidget(self.slowMode, 4, 0, 1, 1)
+        self.layout.addWidget(self.slowModeEdit, 4, 1, 1, 1)
 
         self.setLayout(self.layout)
 
@@ -93,4 +99,4 @@ class videoSettings(QWidget):
     def updateThresholdEdit(self):
         if not self.thresholdEdit.text() or float(self.thresholdEdit.text()) < float(MINIMUM_THRESHOLD):
             self.thresholdEdit.setText(MINIMUM_THRESHOLD)
-        self.thresholdSlider.setValue(float(self.thresholdEdit.text()))
+        self.thresholdSlider.setValue(int(self.thresholdEdit.text()))
