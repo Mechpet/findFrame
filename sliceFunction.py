@@ -21,6 +21,7 @@ class sliceWorker(QObject):
     slicing = pyqtSignal()
     finished = pyqtSignal()
     matched = pyqtSignal()
+    notmatched = pyqtSignal()
     sourceImageChanged = pyqtSignal(QImage)
     targetImageChanged = pyqtSignal(QImage)
     progressChanged = pyqtSignal(float)
@@ -94,11 +95,13 @@ class sliceWorker(QObject):
                             matchStarts[i] = sourceFrameIndex
                         self.progressChanged.emit(((matchStarts[i] - sourceRange[0]) / sourceRange[1] + (1 - (matchStarts[i] - sourceRange[0]) / sourceRange[1]) / targetFrameCnt * targetFrameIndex) * 100)
                         self.matched.emit()
+                        if slowOn:
+                            cv2.waitKey(slowOn)
                         # Read the next frame of the targetCapture
                         targetFlag, targetFrameImg = targetCapture.read()
                         if targetFlag:
-                            targetFrameImg = cv2.cvtColor(targetFrameImg, cv2.COLOR_BGR2GRAY)
                             targetFrameImgResized = cv2.resize(targetFrameImg, dimensions)
+                            targetFrameImgResized = cv2.cvtColor(targetFrameImgResized, cv2.COLOR_BGR2GRAY)
                             targetFrameIndex = targetCapture.get(cv2.CAP_PROP_POS_FRAMES)
                             if config.onPreview:
                                 h, w = targetFrameImgResized.shape
@@ -107,18 +110,27 @@ class sliceWorker(QObject):
                                 self.targetImageChanged.emit(p)
                         else:
                             break
-                    elif matchStarts[i]:
-                        print("BROKE")
+                    elif matchStarts[i] >= 0:
+                        self.notmatched.emit()
+                        if slowOn:
+                            cv2.waitKey(slowOn)
                         targetCapture.set(cv2.CAP_PROP_POS_FRAMES, 0)
                         targetFlag, targetFrameImg = targetCapture.read()
                         targetFrameIndex = targetCapture.get(cv2.CAP_PROP_POS_FRAMES)
                         targetFrameImgResized = cv2.resize(targetFrameImg, dimensions)
                         targetFrameImgResized = cv2.cvtColor(targetFrameImgResized, cv2.COLOR_BGR2GRAY)
-                        targetFrameIndex = targetCapture.get(cv2.CAP_PROP_POS_FRAMES)
+                        if config.onPreview:
+                            h, w = targetFrameImgResized.shape
+                            p = QImage(targetFrameImgResized.data, w, h, QImage.Format.Format_Grayscale8)
+                            p = p.scaled(320, 240)
+                            self.targetImageChanged.emit(p)
                         matchStarts[i] = -1
                         self.progressChanged.emit((sourceFrameIndex - sourceRange[0]) / sourceRange[1] * 100)
                     else:
                         self.progressChanged.emit((sourceFrameIndex - sourceRange[0]) / sourceRange[1] * 100)
+                        self.notmatched.emit()
+                        if slowOn:
+                            cv2.waitKey(slowOn)
             
                     sourceFrameIndex = sourceCapture.get(cv2.CAP_PROP_POS_FRAMES)
                 # Something failed while trying to read the next frame - safe to end the search
@@ -128,9 +140,6 @@ class sliceWorker(QObject):
                 # Didn't find a suitable match within the given range
                 if sourceFrameIndex == sourceRange[1] and matchStarts[i] == -1:
                     break
-
-                if slowOn:
-                    cv2.waitKey(slowOn)
 
         return matchStarts
 

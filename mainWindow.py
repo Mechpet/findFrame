@@ -99,6 +99,8 @@ class mainWindow(QWidget):
         self.worker.progressChanged.connect(self.progress.match.updateValue)
         self.worker.sourceImageChanged.connect(self.progress.match.setSource)
         self.worker.targetImageChanged.connect(self.progress.match.setTarget)
+        self.worker.matched.connect(self.progress.match.success)
+        self.worker.notmatched.connect(self.progress.match.fail)
         self.worker.moveToThread(self.thread)
         self.thread.start()
         self.worker.ready.emit()
