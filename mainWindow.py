@@ -105,7 +105,7 @@ class mainWindow(QWidget):
         self.thread.start()
         self.worker.ready.emit()
 
-        self.progress.match.updateStatus("MATCHING VIDEOS.")
+        self.progress.updateStatus("MATCHING VIDEOS.")
 
     def closeEvent(self, event):
         """Quit all running threads and exit the app"""
@@ -118,12 +118,13 @@ class mainWindow(QWidget):
 
     @pyqtSlot()
     def startSlicing(self):
-        self.progress.match.updateStatus("SLICING VIDEOS.")
+        self.progress.updateStatus("SLICING VIDEOS.")
+        self.progress.stack.setCurrentWidget(self.progress.slice)
 
     @pyqtSlot()
     def finishedSlicing(self):
         self.closeThread()
-        self.progress.match.updateStatus("IDLE.")
+        self.progress.updateStatus("IDLE.")
 
     @pyqtSlot(int)
     def updateConfig(self, newIndex):

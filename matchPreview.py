@@ -10,7 +10,6 @@ class matchPreview(QWidget):
 
     def initUI(self):
         layout = QGridLayout()
-        self.status = QLabel("IDLE.")
         self.sourceImage = QLabel("")
         self.sourceImage.resize(320, 240)
         self.targetImage = QLabel("")
@@ -26,20 +25,15 @@ class matchPreview(QWidget):
         self.matchStatus.addWidget(matchSuccess)
         self.matchStatus.setCurrentIndex(0)
 
-        layout.addWidget(self.status, 0, 0, 1, -1)
-        layout.addWidget(self.sourceImage, 1, 0, 4, 5)
-        layout.addWidget(self.targetImage, 1, 5, 4, 5)
-        layout.addWidget(self.matchStatus, 5, 0, 1, -1, Qt.AlignmentFlag.AlignHCenter)
-        layout.addWidget(self.progress, 6, 0, 1, -1)
+        layout.addWidget(self.sourceImage, 0, 0, 4, 5)
+        layout.addWidget(self.targetImage, 0, 5, 4, 5)
+        layout.addWidget(self.matchStatus, 4, 0, 1, -1, Qt.AlignmentFlag.AlignHCenter)
+        layout.addWidget(self.progress, 5, 0, 1, -1)
         self.setLayout(layout)
 
     @pyqtSlot(float)
     def updateValue(self, value):
         self.progress.setValue(int(value))
-
-    @pyqtSlot(str)
-    def updateStatus(self, newStatus):
-        self.status.setText(newStatus)
 
     @pyqtSlot(QImage)
     def setSource(self, image):

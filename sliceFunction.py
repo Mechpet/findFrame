@@ -200,7 +200,8 @@ class sliceWorker(QObject):
                     f"'{betweenStringArgs}', "\
                     "asetpts = N/SR/TB\" "\
                     "-map 0 "\
-                    f"{getFileName(directory, name, prefix, sliceIndex)}"
+                    f"{getFileName(directory, name, prefix, sliceIndex)} "\
+                    "> output.txt 2>&1"
 
                 start = sliceRange[-1][1]
                 if start >= max:
@@ -215,7 +216,8 @@ class sliceWorker(QObject):
                     f"'between({sampling}, {start}, {max})', "\
                     "asetpts = N/SR/TB\" "\
                     "-map 0 "\
-                    f"{getFileName(directory, name, prefix, sliceIndex)}"
+                    f"{getFileName(directory, name, prefix, sliceIndex)} "\
+                    "> output.txt 2>&1"
                 config.executingFlag = False
             else:
                 file.write("Case 3:\n")
@@ -227,7 +229,8 @@ class sliceWorker(QObject):
                     f"'between({sampling}, {start}, {end})', "\
                     "asetpts = N/SR/TB\" "\
                     "-map 0 "\
-                    f"{getFileName(directory, name, prefix, sliceIndex)}"
+                    f"{getFileName(directory, name, prefix, sliceIndex)} "\
+                    "> output.txt 2>&1"
 
                 start = end
         
