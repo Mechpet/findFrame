@@ -97,6 +97,7 @@ class sliceWorker(QObject):
                         self.matched.emit()
                         if slowOn:
                             cv2.waitKey(slowOn)
+
                         # Read the next frame of the targetCapture
                         targetFlag, targetFrameImg = targetCapture.read()
                         if targetFlag:
@@ -114,11 +115,14 @@ class sliceWorker(QObject):
                         self.notmatched.emit()
                         if slowOn:
                             cv2.waitKey(slowOn)
-                        targetCapture.set(cv2.CAP_PROP_POS_FRAMES, 0)
+
+                        targetCapture.set(cv2.CAP_PROP_POS_FRAMES, 1)
                         targetFlag, targetFrameImg = targetCapture.read()
                         targetFrameIndex = targetCapture.get(cv2.CAP_PROP_POS_FRAMES)
                         targetFrameImgResized = cv2.resize(targetFrameImg, dimensions)
                         targetFrameImgResized = cv2.cvtColor(targetFrameImgResized, cv2.COLOR_BGR2GRAY)
+
+                        # Move backward by one frame to re-compare frames
                         if config.onPreview:
                             h, w = targetFrameImgResized.shape
                             p = QImage(targetFrameImgResized.data, w, h, QImage.Format.Format_Grayscale8)
