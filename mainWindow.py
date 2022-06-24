@@ -1,6 +1,6 @@
 import sys
 
-from PyQt6.QtWidgets import QApplication, QWidget, QGridLayout, QPushButton, QTabWidget
+from PyQt6.QtWidgets import QApplication, QWidget, QGridLayout, QPushButton, QTabWidget, QStackedWidget
 from PyQt6.QtCore import Qt, QObject, QThread, pyqtSignal, pyqtSlot
 from cv2 import threshold
 
@@ -45,10 +45,14 @@ class mainWindow(QWidget):
         self.stopBtn = QPushButton("Stop")
         self.stopBtn.clicked.connect(self.stopSlicing)
 
+        self.mainBtn = QStackedWidget()
+        self.mainBtn.addWidget(self.executeBtn)
+        self.mainBtn.addWidget(self.stopBtn)
+        self.mainBtn.setCurrentWidget(self.executeBtn)
+
         self.layout = QGridLayout()
         self.layout.addWidget(self.tabWidget, 1, 0, 5, 2)
-        self.layout.addWidget(self.executeBtn, 10, 0, 1, 1)
-        self.layout.addWidget(self.stopBtn, 10, 1, 1, 1)
+        self.layout.addWidget(self.mainBtn, 7, 0, 1, -1, Qt.AlignmentFlag.AlignVCenter)
         self.setLayout(self.layout)
         
         self.show()
@@ -61,9 +65,12 @@ class mainWindow(QWidget):
     @pyqtSlot()
     def stopSlicing(self):
         """Stop the slicing operation of the current worker"""
+        self.closeThread()
         config.executingFlag = False
         os.system("taskkill /f /im ffmpeg.exe")
+        self.progress.updateStatus("IDLE.")
         self.progress.stack.setCurrentWidget(self.progress.match)
+        self.mainBtn.setCurrentWidget(self.executeBtn)
 
     def createSliceWorker(self):
         """Get all of the information the user inputted"""
@@ -98,7 +105,7 @@ class mainWindow(QWidget):
 
         self.worker = sliceWorker(sourceFile, targetFiles, targetSSIMs, sourceRanges, sliceDuration, dimensions, directory, template, prefix, slowEnabled)
         self.worker.slicing.connect(self.startSlicing)
-        self.worker.finished.connect(self.finishedSlicing)
+        self.worker.finished.connect(self.stopSlicing)
         self.worker.progressChanged.connect(self.progress.match.updateValue)
         self.worker.sourceImageChanged.connect(self.progress.match.setSource)
         self.worker.targetImageChanged.connect(self.progress.match.setTarget)
@@ -106,6 +113,8 @@ class mainWindow(QWidget):
         self.worker.notmatched.connect(self.progress.match.fail)
         self.worker.moveToThread(self.thread)
         self.thread.start()
+
+        self.mainBtn.setCurrentWidget(self.stopBtn)
         self.worker.ready.emit()
 
         self.progress.updateStatus("MATCHING VIDEOS.")
@@ -124,11 +133,6 @@ class mainWindow(QWidget):
     def startSlicing(self):
         self.progress.updateStatus("SLICING VIDEOS.")
         self.progress.stack.setCurrentWidget(self.progress.slice)
-
-    @pyqtSlot()
-    def finishedSlicing(self):
-        self.closeThread()
-        self.progress.updateStatus("IDLE.")
 
     @pyqtSlot(int)
     def updateConfig(self, newIndex):
