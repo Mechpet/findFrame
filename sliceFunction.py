@@ -112,6 +112,7 @@ class sliceWorker(QObject):
                         else:
                             break
                     elif matchStarts[i] >= 0:
+                        matchStarts[i] = -1
                         self.notmatched.emit()
                         if slowOn:
                             cv2.waitKey(slowOn)
@@ -121,14 +122,29 @@ class sliceWorker(QObject):
                         targetFrameIndex = targetCapture.get(cv2.CAP_PROP_POS_FRAMES)
                         targetFrameImgResized = cv2.resize(targetFrameImg, dimensions)
                         targetFrameImgResized = cv2.cvtColor(targetFrameImgResized, cv2.COLOR_BGR2GRAY)
+                        ssimFloat = ssim(sourceFrameImgResized, targetFrameImgResized)
+                        print(f"SSIM: {ssimFloat}")
 
-                        # Move backward by one frame to re-compare frames
-                        if config.onPreview:
-                            h, w = targetFrameImgResized.shape
-                            p = QImage(targetFrameImgResized.data, w, h, QImage.Format.Format_Grayscale8)
-                            p = p.scaled(320, 240)
-                            self.targetImageChanged.emit(p)
-                        matchStarts[i] = -1
+                        if ssimFloat >= targetSSIMs[i]:
+                            matchStarts[i] = sourceFrameIndex
+                            self.progressChanged.emit(((matchStarts[i] - sourceRange[0]) / sourceRange[1] + (1 - (matchStarts[i] - sourceRange[0]) / sourceRange[1]) / targetFrameCnt * targetFrameIndex) * 100)
+                            self.matched.emit()
+                            if slowOn:
+                                cv2.waitKey(slowOn)
+
+                        # Read the next frame of the targetCapture
+                        targetFlag, targetFrameImg = targetCapture.read()
+                        if targetFlag:
+                            targetFrameImgResized = cv2.resize(targetFrameImg, dimensions)
+                            targetFrameImgResized = cv2.cvtColor(targetFrameImgResized, cv2.COLOR_BGR2GRAY)
+                            targetFrameIndex = targetCapture.get(cv2.CAP_PROP_POS_FRAMES)
+                            if config.onPreview:
+                                h, w = targetFrameImgResized.shape
+                                p = QImage(targetFrameImgResized.data, w, h, QImage.Format.Format_Grayscale8)
+                                p = p.scaled(320, 240)
+                                self.targetImageChanged.emit(p)
+                        else:
+                            break
                         self.progressChanged.emit((sourceFrameIndex - sourceRange[0]) / sourceRange[1] * 100)
                     else:
                         self.progressChanged.emit((sourceFrameIndex - sourceRange[0]) / sourceRange[1] * 100)

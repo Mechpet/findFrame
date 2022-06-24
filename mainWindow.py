@@ -63,6 +63,7 @@ class mainWindow(QWidget):
         """Stop the slicing operation of the current worker"""
         config.executingFlag = False
         os.system("taskkill /f /im ffmpeg.exe")
+        self.progress.stack.setCurrentWidget(self.progress.match)
 
     def createSliceWorker(self):
         """Get all of the information the user inputted"""
@@ -73,9 +74,11 @@ class mainWindow(QWidget):
         dimensions = (int(self.videoSettings.compareWidth.text()), int(self.videoSettings.compareHeight.text()))
         thresholdSSIM = self.videoSettings.thresholdEdit.text()
         if thresholdSSIM:
-            targetSSIM = float(thresholdSSIM)
+            targetSSIM = float(thresholdSSIM) / 100.0
+            print("targetSSIM = ", targetSSIM)
         else:
             targetSSIM = DEFAULT_SSIM
+            print("targetSSIM = ", targetSSIM)
         for i in range(self.captureEditor.targetList.layout.count() - 1):
             targetFiles.append(self.captureEditor.targetList.layout.itemAt(i).widget().fileEdit.text())
             targetSSIMs.append(targetSSIM)
@@ -106,6 +109,7 @@ class mainWindow(QWidget):
         self.worker.ready.emit()
 
         self.progress.updateStatus("MATCHING VIDEOS.")
+        self.progress.stack.setCurrentWidget(self.progress.match)
 
     def closeEvent(self, event):
         """Quit all running threads and exit the app"""
