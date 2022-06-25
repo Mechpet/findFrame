@@ -203,7 +203,6 @@ class sliceWorker(QObject):
         self.slicing.emit()
         while config.executingFlag:
             file = open("log.txt", "a")
-            self.progressChanged.emit(sliceIndex / numSlices)
             if matchStart >= start and matchStart <= end:
                 file.write("Case 1:\n")
                 sliceRange = [[start, end]]
@@ -268,6 +267,7 @@ class sliceWorker(QObject):
             subprocess.call(ffmpegCmdSlow, shell = True)
 
             sliceIndex += 1
+            self.progressChanged.emit(sliceIndex / numSlices * 100)
     
         self.finished.emit()
 
