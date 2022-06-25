@@ -3,6 +3,7 @@ import ffmpeg
 import os
 import subprocess
 from skimage.metrics import structural_similarity as ssim
+from math import ceil
 import numpy as np
 
 from PyQt6.QtCore import Qt, QObject, pyqtSignal, pyqtSlot
@@ -165,6 +166,9 @@ class sliceWorker(QObject):
 
     def slice(self, sourceFile, targetFiles, targetSSIMs, sourceRanges, sliceDuration, dimensions, directory = "", name = "", prefix = False, slowOn = False):
         matchingFrames = self.match(sourceFile, targetFiles, targetSSIMs, sourceRanges, dimensions, slowOn)
+        
+        # Reset progress
+        self.progressChanged.emit(0.0)
 
         sourceProps = captureAttributes(sourceFile)
         targetsProps = [captureAttributes(targetFile) for targetFile in targetFiles]
@@ -189,9 +193,17 @@ class sliceWorker(QObject):
         matchStart = targetMatches[targetIndex][0]
         matchEnd = targetMatches[targetIndex][1]
 
+        combinedLen = sourceProps.frameCnt / sourceProps.FPS
+        for match in targetMatches:
+            if match[0] >= 0:
+                combinedLen -= (match[1] - match[0])
+        
+        numSlices = ceil(combinedLen / sliceDuration)
+
         self.slicing.emit()
         while config.executingFlag:
             file = open("log.txt", "a")
+            self.progressChanged.emit(sliceIndex / numSlices)
             if matchStart >= start and matchStart <= end:
                 file.write("Case 1:\n")
                 sliceRange = [[start, end]]

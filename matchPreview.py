@@ -1,4 +1,4 @@
-from PyQt6.QtWidgets import QWidget, QLabel, QProgressBar, QGridLayout, QStackedWidget
+from PyQt6.QtWidgets import QWidget, QLabel, QGridLayout, QStackedWidget
 from PyQt6.QtCore import Qt, pyqtSlot
 from PyQt6.QtGui import QImage, QPixmap
 
@@ -14,9 +14,6 @@ class matchPreview(QWidget):
         self.sourceImage.resize(320, 240)
         self.targetImage = QLabel("")
         self.targetImage.resize(320, 240)
-        self.progress = QProgressBar()
-        self.progress.setMaximum(100)
-        self.progress.setValue(0)
         self.matchStatus = QStackedWidget()
         matchSuccess = QLabel("<font color = 'green'>Matched frames.</font>")
         matchFailure = QLabel("<font color = 'red'>Not a match.</font>")
@@ -28,12 +25,7 @@ class matchPreview(QWidget):
         layout.addWidget(self.sourceImage, 0, 0, 4, 5)
         layout.addWidget(self.targetImage, 0, 5, 4, 5)
         layout.addWidget(self.matchStatus, 4, 0, 1, -1, Qt.AlignmentFlag.AlignHCenter)
-        layout.addWidget(self.progress, 5, 0, 1, -1)
         self.setLayout(layout)
-
-    @pyqtSlot(float)
-    def updateValue(self, value):
-        self.progress.setValue(int(value))
 
     @pyqtSlot(QImage)
     def setSource(self, image):

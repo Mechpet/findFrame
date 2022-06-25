@@ -106,7 +106,7 @@ class mainWindow(QWidget):
         self.worker = sliceWorker(sourceFile, targetFiles, targetSSIMs, sourceRanges, sliceDuration, dimensions, directory, template, prefix, slowEnabled)
         self.worker.slicing.connect(self.startSlicing)
         self.worker.finished.connect(self.stopSlicing)
-        self.worker.progressChanged.connect(self.progress.match.updateValue)
+        self.worker.progressChanged.connect(self.progress.updateValue)
         self.worker.sourceImageChanged.connect(self.progress.match.setSource)
         self.worker.targetImageChanged.connect(self.progress.match.setTarget)
         self.worker.matched.connect(self.progress.match.success)
