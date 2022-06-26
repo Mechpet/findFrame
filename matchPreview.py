@@ -2,6 +2,8 @@ from PyQt6.QtWidgets import QWidget, QLabel, QGridLayout, QStackedWidget
 from PyQt6.QtCore import Qt, pyqtSlot
 from PyQt6.QtGui import QImage, QPixmap
 
+from SSIMBar import SSIMBar
+
 class matchPreview(QWidget):
     def __init__(self):
         super().__init__()
@@ -22,9 +24,12 @@ class matchPreview(QWidget):
         self.matchStatus.addWidget(matchSuccess)
         self.matchStatus.setCurrentIndex(0)
 
+        self.SSIM = SSIMBar()
+
         layout.addWidget(self.sourceImage, 0, 0, 4, 5)
         layout.addWidget(self.targetImage, 0, 5, 4, 5)
-        layout.addWidget(self.matchStatus, 4, 0, 1, -1, Qt.AlignmentFlag.AlignHCenter)
+        layout.addWidget(self.SSIM, 4, 0, 1, -1)
+        layout.addWidget(self.matchStatus, 5, 0, 1, -1, Qt.AlignmentFlag.AlignHCenter)
         self.setLayout(layout)
 
     @pyqtSlot(QImage)
@@ -42,3 +47,7 @@ class matchPreview(QWidget):
     @pyqtSlot()
     def fail(self):
         self.matchStatus.setCurrentIndex(0)
+
+    @pyqtSlot(float)
+    def initSSIM(self, threshold):
+        self.SSIM.initUI(threshold)

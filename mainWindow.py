@@ -112,13 +112,14 @@ class mainWindow(QWidget):
         self.worker.matched.connect(self.progress.match.success)
         self.worker.notmatched.connect(self.progress.match.fail)
         self.worker.moveToThread(self.thread)
-        self.thread.start()
-
-        self.mainBtn.setCurrentWidget(self.stopBtn)
-        self.worker.ready.emit()
 
         self.progress.updateStatus("MATCHING VIDEOS.")
         self.progress.stack.setCurrentWidget(self.progress.match)
+        self.progress.match.initSSIM(targetSSIM * 100)
+
+        self.thread.start()
+        self.mainBtn.setCurrentWidget(self.stopBtn)
+        self.worker.ready.emit()
 
     def closeEvent(self, event):
         """Quit all running threads and exit the app"""
