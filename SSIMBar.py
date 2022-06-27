@@ -20,8 +20,8 @@ class SSIMBar(QProgressBar):
         if self.threshold:
             qp = QPainter(self)
             qb = QBrush(Qt.BrushStyle.SolidPattern)
-            qb.setColor(QColor(204, 204, 204))
-            qp.setPen(QPen(qb, 2, Qt.PenStyle.SolidLine, Qt.PenCapStyle.RoundCap))
+            qb.setColor(QColor(0, 0, 0))
+            qp.setPen(QPen(qb, 1.5, Qt.PenStyle.SolidLine, Qt.PenCapStyle.RoundCap))
             w = self.width()
             h = self.height()
             qp.drawLine(int(w * self.threshold / 100), 0, int(w * self.threshold / 100), h)
@@ -29,15 +29,16 @@ class SSIMBar(QProgressBar):
     @pyqtSlot(float)
     def displaySSIM(self, value):
         self.setValue(int(value))
+        self.setFormat(f" SSIM: {value}%")
         if value >= self.threshold:
             self.setStyleSheet("""
-                QProgressBar {
+                QProgressBar::chunk {
                     background-color: green;
                 }
             """)
         else:
             self.setStyleSheet("""
-                QProgressBar {
+                QProgressBar::chunk {
                     background-color: red;
                 }
             """)

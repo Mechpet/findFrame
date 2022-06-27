@@ -25,6 +25,7 @@ class sliceWorker(QObject):
     notmatched = pyqtSignal()
     sourceImageChanged = pyqtSignal(QImage)
     targetImageChanged = pyqtSignal(QImage)
+    newSSIM = pyqtSignal(float)
     progressChanged = pyqtSignal(float)
     def __init__(self, sourceFile, targetFiles, targetSSIMs, sourceRanges, sliceDuration, dimensions, directory, template, prefix, slowOn):
         super().__init__()
@@ -89,7 +90,7 @@ class sliceWorker(QObject):
 
                     # Calculate the Structural Similarity Index between the two grayscale images
                     ssimFloat = ssim(sourceFrameImgResized, targetFrameImgResized)
-                    print(f"SSIM: {ssimFloat}")
+                    self.newSSIM.emit(ssimFloat * 100)
 
                     if ssimFloat >= targetSSIMs[i]:
                         if matchStarts[i] < 0:
@@ -124,8 +125,6 @@ class sliceWorker(QObject):
                         targetFrameImgResized = cv2.resize(targetFrameImg, dimensions)
                         targetFrameImgResized = cv2.cvtColor(targetFrameImgResized, cv2.COLOR_BGR2GRAY)
                         ssimFloat = ssim(sourceFrameImgResized, targetFrameImgResized)
-                        print(f"SSIM: {ssimFloat}")
-
                         if ssimFloat >= targetSSIMs[i]:
                             matchStarts[i] = sourceFrameIndex
                             self.progressChanged.emit(((matchStarts[i] - sourceRange[0]) / sourceRange[1] + (1 - (matchStarts[i] - sourceRange[0]) / sourceRange[1]) / targetFrameCnt * targetFrameIndex) * 100)
@@ -133,19 +132,20 @@ class sliceWorker(QObject):
                             if slowOn:
                                 cv2.waitKey(slowOn)
 
-                        # Read the next frame of the targetCapture
-                        targetFlag, targetFrameImg = targetCapture.read()
-                        if targetFlag:
-                            targetFrameImgResized = cv2.resize(targetFrameImg, dimensions)
-                            targetFrameImgResized = cv2.cvtColor(targetFrameImgResized, cv2.COLOR_BGR2GRAY)
-                            targetFrameIndex = targetCapture.get(cv2.CAP_PROP_POS_FRAMES)
-                            if config.onPreview:
-                                h, w = targetFrameImgResized.shape
-                                p = QImage(targetFrameImgResized.data, w, h, QImage.Format.Format_Grayscale8)
-                                p = p.scaled(320, 240)
-                                self.targetImageChanged.emit(p)
-                        else:
-                            break
+                            # Read the next frame of the targetCapture
+                            targetFlag, targetFrameImg = targetCapture.read()
+                            if targetFlag:
+                                targetFrameImgResized = cv2.resize(targetFrameImg, dimensions)
+                                targetFrameImgResized = cv2.cvtColor(targetFrameImgResized, cv2.COLOR_BGR2GRAY)
+                                targetFrameIndex = targetCapture.get(cv2.CAP_PROP_POS_FRAMES)
+                            else:
+                                break
+                        
+                        if config.onPreview:
+                            h, w = targetFrameImgResized.shape
+                            p = QImage(targetFrameImgResized.data, w, h, QImage.Format.Format_Grayscale8)
+                            p = p.scaled(320, 240)
+                            self.targetImageChanged.emit(p)
                         self.progressChanged.emit((sourceFrameIndex - sourceRange[0]) / sourceRange[1] * 100)
                     else:
                         self.progressChanged.emit((sourceFrameIndex - sourceRange[0]) / sourceRange[1] * 100)
