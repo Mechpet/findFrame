@@ -3,6 +3,7 @@ import sys
 from PyQt6.QtWidgets import QApplication, QWidget, QGridLayout, QPushButton, QTabWidget, QStackedWidget
 from PyQt6.QtCore import Qt, QObject, QThread, pyqtSignal, pyqtSlot
 from cv2 import threshold
+import ctypes
 
 from captureEditor import captureEditor
 from videoSettings import videoSettings
@@ -25,6 +26,8 @@ class mainWindow(QWidget):
         self.initUI()
 
     def initUI(self):
+        self.setWindowTitle("Slicer")
+        ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID("SLICER")
         self.setFixedSize(750, 600)
 
         self.captureEditor = captureEditor()
