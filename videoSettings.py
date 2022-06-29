@@ -48,10 +48,6 @@ class videoSettings(QWidget):
         self.compareWidth.editingFinished.connect(self.updateHeight)
         self.compareHeight.editingFinished.connect(self.updateWidth)
 
-        self.slowMode = QLabel("Slow mode delay:")
-        self.slowModeEdit = QLineEdit("")
-        self.slowModeEdit.setValidator(QDoubleValidator())
-
         self.thresholdSlider.valueChanged.connect(lambda: self.thresholdEdit.setText(str(self.thresholdSlider.value())))
 
         self.layout.addWidget(self.thresholdLabel, 0, 0, 1, 1)
@@ -62,8 +58,6 @@ class videoSettings(QWidget):
         self.layout.addWidget(self.compareLabel, 2, 0, 2, 1, Qt.AlignmentFlag.AlignVCenter)
         self.layout.addWidget(self.compareWidth, 2, 1, 1, 1)
         self.layout.addWidget(self.compareHeight, 3, 1, 1, 1)
-        self.layout.addWidget(self.slowMode, 4, 0, 1, 1)
-        self.layout.addWidget(self.slowModeEdit, 4, 1, 1, 1)
 
         self.setLayout(self.layout)
 

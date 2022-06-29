@@ -1,7 +1,8 @@
-from PyQt6.QtWidgets import QWidget, QLabel, QGridLayout, QStackedWidget
+from PyQt6.QtWidgets import QWidget, QLabel, QGridLayout, QStackedWidget, QCheckBox, QLineEdit, QHBoxLayout
 from PyQt6.QtCore import Qt, pyqtSlot
-from PyQt6.QtGui import QImage, QPixmap
+from PyQt6.QtGui import QImage, QPixmap, QIntValidator
 
+import config
 from SSIMBar import SSIMBar
 
 class matchPreview(QWidget):
@@ -26,10 +27,21 @@ class matchPreview(QWidget):
 
         self.SSIM = SSIMBar()
 
+        slowHBox = QHBoxLayout()
+        self.slowEnable = QCheckBox("Enable slow mode (ms):")
+        self.slowEnable.clicked.connect(self.changeSlowMode)
+
+        self.slowModeEdit = QLineEdit(str("0"))
+        self.slowModeEdit.setValidator(QIntValidator())
+        self.slowModeEdit.textChanged.connect(self.changeSlowDuration)
+        slowHBox.addWidget(self.slowEnable)
+        slowHBox.addWidget(self.slowModeEdit)
+
         layout.addWidget(self.sourceImage, 0, 0, 4, 5)
         layout.addWidget(self.targetImage, 0, 5, 4, 5)
         layout.addWidget(self.SSIM, 4, 0, 1, -1)
-        layout.addWidget(self.matchStatus, 5, 0, 1, -1, Qt.AlignmentFlag.AlignHCenter)
+        layout.addLayout(slowHBox, 5, 0, 1, -1)
+        layout.addWidget(self.matchStatus, 6, 0, 1, -1, Qt.AlignmentFlag.AlignHCenter)
         self.setLayout(layout)
 
     @pyqtSlot(QImage)
@@ -51,3 +63,12 @@ class matchPreview(QWidget):
     @pyqtSlot(float)
     def initSSIM(self, threshold):
         self.SSIM.initUI(threshold)
+
+    @pyqtSlot()
+    def changeSlowMode(self):
+        config.slowOn = self.slowEnable.isChecked()
+
+    @pyqtSlot(str)
+    def changeSlowDuration(self, str):
+        config.slowDuration = int(self.slowModeEdit.text())
+    

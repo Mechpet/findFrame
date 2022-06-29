@@ -102,11 +102,8 @@ class mainWindow(QWidget):
         directory = self.outputSettings.getOutputDirectory()
         template = self.outputSettings.outputTemplate.text()
         prefix = self.outputSettings.appendBtns.checkedId()
-        slowEnabled = self.videoSettings.slowModeEdit.text()
-        if slowEnabled:
-            slowEnabled = int(slowEnabled)
 
-        self.worker = sliceWorker(sourceFile, targetFiles, targetSSIMs, sourceRanges, sliceDuration, dimensions, directory, template, prefix, slowEnabled)
+        self.worker = sliceWorker(sourceFile, targetFiles, targetSSIMs, sourceRanges, sliceDuration, dimensions, directory, template, prefix)
         self.worker.slicing.connect(self.startSlicing)
         self.worker.finished.connect(self.stopSlicing)
         self.worker.progressChanged.connect(self.progress.updateValue)
