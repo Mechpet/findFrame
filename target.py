@@ -1,5 +1,6 @@
-from PyQt6.QtWidgets import QWidget, QHBoxLayout, QLineEdit, QPushButton, QFileDialog, QLabel
-from PyQt6.QtCore import QFile, Qt
+from PyQt6.QtWidgets import QWidget, QHBoxLayout, QLineEdit, QPushButton, QFileDialog, QLabel, QSlider, QVBoxLayout
+from PyQt6.QtCore import QFile, Qt, pyqtSlot
+from PyQt6.QtGui import QDoubleValidator
 from qtrangeslider import QLabeledRangeSlider
 
 from videoChecker import videoValidity
@@ -11,6 +12,8 @@ acceptedExtensions = (
     ".mkv"
 )
 
+MINIMUM_THRESHOLD = "0.0"
+
 class targetHeader(QWidget):
     """Header that tells the user what each column represents"""
     def __init__(self):
@@ -21,8 +24,10 @@ class targetHeader(QWidget):
         layout = QHBoxLayout()
         layout.addSpacing(75)
         layout.addWidget(QLabel("Video path"))
-        layout.addSpacing(325)
+        layout.addSpacing(270)
         layout.addWidget(QLabel("Source range"))
+        layout.addSpacing(80)
+        layout.addWidget(QLabel("SSIM Threshold"))
         
         self.setLayout(layout)
 
@@ -42,26 +47,34 @@ class target(QWidget):
         self.fileEdit.setFixedWidth(200)
         self.fileBrowse = QPushButton("Browse")
         self.validation = QLabel("Invalid video")
-        print('INIT')
         self.bounds = QLabeledRangeSlider(Qt.Orientation.Horizontal)
-        print('INITED')
         self.bounds.setFixedWidth(200)
-        print('SETTED W')
         self.bounds.setMinimum(0)
-        print('SETTED MIN')
-        #self.bounds.setMaximum(100)
-        print('SETTED MAX')
         self.bounds.setValue((0, 100))
-        print('SETTED V')
 
         self.fileBrowse.clicked.connect(self.openFileDialog)
 
+        thresholdVBox = QVBoxLayout()
+        self.thresholdEdit = QLineEdit()
+        self.thresholdEdit.setPlaceholderText("95")
+        self.thresholdEdit.setValidator(QDoubleValidator())
+        self.thresholdEdit.editingFinished.connect(self.updateThresholdEdit)
+        self.thresholdSlider = QSlider(Qt.Orientation.Horizontal)
+        self.thresholdSlider.setMinimum(0)
+        self.thresholdSlider.setMaximum(100)
+        self.thresholdSlider.valueChanged.connect(lambda: self.thresholdEdit.setText(str(self.thresholdSlider.value())))
+
+
+        thresholdVBox.addWidget(self.thresholdSlider)
+        thresholdVBox.addWidget(self.thresholdEdit)
+
         self.layout.addWidget(self.fileEdit)
         self.layout.addWidget(self.fileBrowse)
-        self.layout.addSpacing(25)
+        self.layout.addSpacing(10)
         self.layout.addWidget(self.validation)
-        self.layout.addSpacing(25)
+        self.layout.addSpacing(10)
         self.layout.addWidget(self.bounds)
+        self.layout.addLayout(thresholdVBox)
 
         self.setLayout(self.layout)
 
@@ -94,3 +107,8 @@ class target(QWidget):
             print("NOPE")
             self.validation.setText("Invalid video")
 
+    @pyqtSlot()
+    def updateThresholdEdit(self):
+        if not self.thresholdEdit.text() or float(self.thresholdEdit.text()) < float(MINIMUM_THRESHOLD):
+            self.thresholdEdit.setText(MINIMUM_THRESHOLD)
+        self.thresholdSlider.setValue(int(self.thresholdEdit.text()))

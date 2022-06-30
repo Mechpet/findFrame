@@ -6,7 +6,6 @@ import cv2
 from videoChecker import videoValidity
 
 MINIMUM_DIMENSIONS = "24"
-MINIMUM_THRESHOLD = "0.0"
 
 class videoSettings(QWidget):
     def __init__(self):
@@ -25,15 +24,6 @@ class videoSettings(QWidget):
     def initUI(self):
         self.layout = QGridLayout()
 
-        self.thresholdLabel = QLabel("Similarity threshold (0-100):")
-        self.thresholdEdit = QLineEdit()
-        self.thresholdEdit.setPlaceholderText("95")
-        self.thresholdEdit.setValidator(QDoubleValidator())
-        self.thresholdEdit.editingFinished.connect(self.updateThresholdEdit)
-        self.thresholdSlider = QSlider(Qt.Orientation.Horizontal)
-        self.thresholdSlider.setMinimum(0)
-        self.thresholdSlider.setMaximum(100)
-
         self.sliceDurationLabel = QLabel("Slice duration (seconds):")
         self.sliceDurationEdit = QLineEdit()
         self.sliceDurationEdit.setValidator(QDoubleValidator())
@@ -48,16 +38,11 @@ class videoSettings(QWidget):
         self.compareWidth.editingFinished.connect(self.updateHeight)
         self.compareHeight.editingFinished.connect(self.updateWidth)
 
-        self.thresholdSlider.valueChanged.connect(lambda: self.thresholdEdit.setText(str(self.thresholdSlider.value())))
-
-        self.layout.addWidget(self.thresholdLabel, 0, 0, 1, 1)
-        self.layout.addWidget(self.thresholdEdit, 0, 1, 1, 1)
-        self.layout.addWidget(self.thresholdSlider, 0, 2, 1, 3)
-        self.layout.addWidget(self.sliceDurationLabel, 1, 0, 1, 1)
-        self.layout.addWidget(self.sliceDurationEdit, 1, 1, 1, 1)
-        self.layout.addWidget(self.compareLabel, 2, 0, 2, 1, Qt.AlignmentFlag.AlignVCenter)
-        self.layout.addWidget(self.compareWidth, 2, 1, 1, 1)
-        self.layout.addWidget(self.compareHeight, 3, 1, 1, 1)
+        self.layout.addWidget(self.sliceDurationLabel, 0, 0, 1, 1)
+        self.layout.addWidget(self.sliceDurationEdit, 0, 1, 1, 1)
+        self.layout.addWidget(self.compareLabel, 1, 0, 2, 1, Qt.AlignmentFlag.AlignVCenter)
+        self.layout.addWidget(self.compareWidth, 1, 1, 1, 1)
+        self.layout.addWidget(self.compareHeight, 2, 1, 1, 1)
 
         self.setLayout(self.layout)
 
@@ -88,9 +73,3 @@ class videoSettings(QWidget):
                 self.compareWidth.setText(MINIMUM_DIMENSIONS)
             ratio = self.capHeight / self.capWidth
             self.compareHeight.setText(str(int(ratio * int(self.compareWidth.text()))))
-
-    @pyqtSlot()
-    def updateThresholdEdit(self):
-        if not self.thresholdEdit.text() or float(self.thresholdEdit.text()) < float(MINIMUM_THRESHOLD):
-            self.thresholdEdit.setText(MINIMUM_THRESHOLD)
-        self.thresholdSlider.setValue(int(self.thresholdEdit.text()))

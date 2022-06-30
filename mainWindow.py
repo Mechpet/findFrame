@@ -82,17 +82,16 @@ class mainWindow(QWidget):
         targetSSIMs = []
         sourceRanges = []
         dimensions = (int(self.videoSettings.compareWidth.text()), int(self.videoSettings.compareHeight.text()))
-        thresholdSSIM = self.videoSettings.thresholdEdit.text()
-        if thresholdSSIM:
-            targetSSIM = float(thresholdSSIM) / 100.0
-            print("targetSSIM = ", targetSSIM)
-        else:
-            targetSSIM = DEFAULT_SSIM
-            print("targetSSIM = ", targetSSIM)
         for i in range(self.captureEditor.targetList.layout.count() - 1):
-            targetFiles.append(self.captureEditor.targetList.layout.itemAt(i).widget().fileEdit.text())
+            target = self.captureEditor.targetList.layout.itemAt(i).widget()
+            targetFiles.append(target.fileEdit.text())
+            thresholdSSIM = target.thresholdEdit.text()
+            if thresholdSSIM:
+                targetSSIM = float(thresholdSSIM) / 100.0
+            else:
+                targetSSIM = DEFAULT_SSIM
             targetSSIMs.append(targetSSIM)
-            sourceRanges.append(self.captureEditor.targetList.layout.itemAt(i).widget().bounds.value())
+            sourceRanges.append(target.bounds.value())
 
         if self.videoSettings.sliceDurationEdit.text():
             sliceDuration = float(self.videoSettings.sliceDurationEdit.text())
@@ -112,11 +111,11 @@ class mainWindow(QWidget):
         self.worker.newSSIM.connect(self.progress.match.SSIM.displaySSIM)
         self.worker.matched.connect(self.progress.match.success)
         self.worker.notmatched.connect(self.progress.match.fail)
+        self.worker.newTarget.connect(self.progress.match.initSSIM)
         self.worker.moveToThread(self.thread)
 
         self.progress.updateStatus("MATCHING VIDEOS.")
         self.progress.stack.setCurrentWidget(self.progress.match)
-        self.progress.match.initSSIM(targetSSIM * 100)
 
         self.thread.start()
         self.mainBtn.setCurrentWidget(self.stopBtn)

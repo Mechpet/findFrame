@@ -27,6 +27,7 @@ class sliceWorker(QObject):
     targetImageChanged = pyqtSignal(QImage)
     newSSIM = pyqtSignal(float)
     progressChanged = pyqtSignal(float)
+    newTarget = pyqtSignal(float)
     def __init__(self, sourceFile, targetFiles, targetSSIMs, sourceRanges, sliceDuration, dimensions, directory, template, prefix):
         super().__init__()
         self.sourceFile = sourceFile
@@ -53,6 +54,7 @@ class sliceWorker(QObject):
         matchStarts = []
 
         for i in range(len(targetFiles)):
+            self.newTarget.emit(targetSSIMs[i] * 100)
             matchStarts.append(-1)
             targetCapture = cv2.VideoCapture(targetFiles[i])
             sourceRange = np.dot(sourceRanges[i], sourceFrameCnt / 100).astype(int)
