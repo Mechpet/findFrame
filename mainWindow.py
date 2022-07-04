@@ -1,8 +1,8 @@
 import sys
 
-from PyQt6.QtWidgets import QApplication, QWidget, QGridLayout, QPushButton, QTabWidget, QStackedWidget
-from PyQt6.QtCore import Qt, QObject, QThread, pyqtSignal, pyqtSlot
-from cv2 import threshold
+from PyQt6.QtWidgets import QApplication, QGridLayout, QPushButton, QTabWidget, QStackedWidget, QMainWindow, QWidget
+from PyQt6.QtCore import Qt, QThread, pyqtSlot
+from PyQt6.QtGui import QIcon
 import ctypes
 
 from captureEditor import captureEditor
@@ -18,18 +18,19 @@ app = QApplication(sys.argv)
 sourceLabelColumnSpan = 3
 sourceInputColumnSpan = 6
 
-class mainWindow(QWidget):
+class mainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
         self.thread = QThread()
 
-        self.initUI()
-
-    def initUI(self):
         self.setWindowTitle("Slicer")
         ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID("SLICER")
         self.setFixedSize(750, 600)
+        self.setWindowIcon(QIcon(r"icon.png"))
 
+        self.initUI()
+
+    def initUI(self):
         self.captureEditor = captureEditor()
         self.videoSettings = videoSettings()
         self.outputSettings = outputSettings()
@@ -53,11 +54,15 @@ class mainWindow(QWidget):
         self.mainBtn.addWidget(self.stopBtn)
         self.mainBtn.setCurrentWidget(self.executeBtn)
 
+        centralWidget = QWidget()
+
         self.layout = QGridLayout()
         self.layout.addWidget(self.tabWidget, 1, 0, 5, 2)
         self.layout.addWidget(self.mainBtn, 7, 0, 1, -1, Qt.AlignmentFlag.AlignVCenter)
-        self.setLayout(self.layout)
         
+        centralWidget.setLayout(self.layout)
+        
+        self.setCentralWidget(centralWidget)
         self.show()
 
     @pyqtSlot()
